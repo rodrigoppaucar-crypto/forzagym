@@ -849,6 +849,51 @@ class GymDatabase {
     return fullSale;
   }
 
+  updateSale(saleId, updates) {
+    const sale = (this.data.sales || []).find(item => item.id === saleId);
+    if (!sale) return false;
+
+    const previousCashAmount = sale.paymentMethod === 'Efectivo' ? Number(sale.total) || 0 : 0;
+    const nextPaymentMethod = updates.paymentMethod ?? sale.paymentMethod;
+    const nextTotal = updates.total !== undefined ? Number(updates.total) : Number(sale.total);
+    if (!Number.isFinite(nextTotal) || nextTotal < 0) return false;
+
+    Object.assign(sale, updates, { total: nextTotal });
+    if (updates.total !== undefined) {
+      const taxRate = Number(this.data.settings?.taxRate) || 0;
+      sale.subtotal = Number((nextTotal / (1 + taxRate / 100)).toFixed(2));
+      sale.tax = Number((nextTotal - sale.subtotal).toFixed(2));
+    }
+    if (updates.date && sale.date && sale.date.length > 10) {
+      sale.date = `${updates.date}${sale.date.slice(10)}`;
+    }
+
+    if (this.data.cashRegister.isOpen) {
+      const nextCashAmount = nextPaymentMethod === 'Efectivo' ? nextTotal : 0;
+      this.data.cashRegister.currentCash += nextCashAmount - previousCashAmount;
+    }
+    this.save();
+    return sale;
+  }
+
+  deleteSale(saleId) {
+    const saleIndex = (this.data.sales || []).findIndex(item => item.id === saleId);
+    if (saleIndex < 0) return false;
+
+    const [sale] = this.data.sales.splice(saleIndex, 1);
+    if (this.data.cashRegister.isOpen && sale.paymentMethod === 'Efectivo') {
+      this.data.cashRegister.currentCash -= Number(sale.total) || 0;
+    }
+    if (sale.type === 'pos') {
+      (sale.items || []).forEach(item => {
+        const product = item.productId && this.getProductById(item.productId);
+        if (product) product.stock = (Number(product.stock) || 0) + (Number(item.qty) || 0);
+      });
+    }
+    this.save();
+    return sale;
+  }
+
   // --- Attendance ---
   recordAttendance(member, method = "QR Escaneado") {
     const now = new Date();
@@ -946,6 +991,54 @@ class GymDatabase {
     }
     this.save();
     return newExp;
+  }
+
+  updateExpense(expenseId, updates) {
+    const expense = this.getExpenses().find(item => item.id === expenseId);
+    if (!expense) return false;
+
+    const previousCashAmount = expense.paymentMethod === 'Efectivo' ? Number(expense.amount) || 0 : 0;
+    const nextPaymentMethod = updates.paymentMethod ?? expense.paymentMethod;
+    const nextAmount = updates.amount !== undefined ? Number(updates.amount) : Number(expense.amount);
+    if (!Number.isFinite(nextAmount) || nextAmount < 0) return false;
+
+    Object.assign(expense, updates, { amount: nextAmount });
+    if (this.data.cashRegister.isOpen) {
+      const nextCashAmount = nextPaymentMethod === 'Efectivo' ? nextAmount : 0;
+      this.data.cashRegister.currentCash += previousCashAmount - nextCashAmount;
+    }
+    this.save();
+    return expense;
+  }
+
+  deleteExpense(expenseId) {
+    const expenseIndex = this.getExpenses().findIndex(item => item.id === expenseId);
+    if (expenseIndex < 0) return false;
+
+    const [expense] = this.data.expenses.splice(expenseIndex, 1);
+    if (this.data.cashRegister.isOpen && expense.paymentMethod === 'Efectivo') {
+      this.data.cashRegister.currentCash += Number(expense.amount) || 0;
+    }
+    this.save();
+    return expense;
+  }
+
+  updateCashRegister(updates) {
+    const cashRegister = this.data.cashRegister;
+    const initialCash = Number(updates.initialCash);
+    const currentCash = Number(updates.currentCash);
+    if (!Number.isFinite(initialCash) || initialCash < 0 || !Number.isFinite(currentCash) || currentCash < 0) {
+      return false;
+    }
+
+    const wasOpen = cashRegister.isOpen;
+    cashRegister.initialCash = initialCash;
+    cashRegister.currentCash = currentCash;
+    cashRegister.isOpen = Boolean(updates.isOpen);
+    if (!wasOpen && cashRegister.isOpen) cashRegister.openedAt = new Date().toISOString();
+    if (wasOpen && !cashRegister.isOpen) cashRegister.closedAt = new Date().toISOString();
+    this.save();
+    return cashRegister;
   }
 
   // --- Users & Staff Management (RBAC) ---

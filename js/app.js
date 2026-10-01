@@ -1210,90 +1210,212 @@ class GymApp {
   }
 
   // --- Finances & Cash Register ---
+  escapeFinanceHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
+  }
+
   renderFinances() {
     const cash = window.GymDB.data.cashRegister;
     const sales = window.GymDB.data.sales || [];
     const expenses = window.GymDB.getExpenses();
-
-    const totalIncome = sales.reduce((sum, s) => sum + s.total, 0);
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalIncome = sales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
+    const totalExpenses = expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
     const netBalance = totalIncome - totalExpenses;
 
     const elBalance = document.getElementById('fin-net-balance');
     const elIncome = document.getElementById('fin-total-income');
     const elExpense = document.getElementById('fin-total-expense');
     const elCash = document.getElementById('fin-cash-drawer');
+    const cashStatus = document.getElementById('fin-cash-status');
 
     if (elBalance) elBalance.textContent = `$${netBalance.toFixed(2)}`;
     if (elIncome) elIncome.textContent = `$${totalIncome.toFixed(2)}`;
     if (elExpense) elExpense.textContent = `$${totalExpenses.toFixed(2)}`;
-    if (elCash) elCash.textContent = `$${cash.currentCash.toFixed(2)}`;
+    if (elCash) elCash.textContent = `$${(Number(cash.currentCash) || 0).toFixed(2)}`;
+    if (cashStatus) cashStatus.textContent = cash.isOpen ? 'Caja abierta' : 'Caja cerrada';
 
-    // Sales Table
     const salesTable = document.getElementById('fin-sales-table-body');
     if (salesTable) {
-      salesTable.innerHTML = sales.slice(0, 8).map(s => `
-        <tr>
-          <td><strong>${s.id}</strong></td>
-          <td>${s.date}</td>
-          <td>${s.customerName}</td>
-          <td><span class="status-badge ${s.type === 'membership' ? 'active' : 'frozen'}">${s.type === 'membership' ? 'Membresía' : 'Tienda POS'}</span></td>
-          <td>${s.paymentMethod}</td>
-          <td><strong>$${s.total.toFixed(2)}</strong></td>
-          <td>
-            <button class="btn btn-outline btn-sm btn-icon" onclick="GymExporter.printReceipt(GymDB.data.sales.find(x => x.id === '${s.id}'))" title="Imprimir Recibo">
-              <i class="fa-solid fa-receipt"></i>
-            </button>
-          </td>
-        </tr>
-      `).join('');
+      salesTable.innerHTML = sales.map(sale => {
+        const saleId = this.escapeFinanceHtml(sale.id);
+        const customer = this.escapeFinanceHtml(sale.customerName || 'Consumidor Final');
+        const date = this.escapeFinanceHtml(sale.date || '');
+        const paymentMethod = this.escapeFinanceHtml(sale.paymentMethod || '');
+        return `
+          <tr>
+            <td><strong>${saleId}</strong></td>
+            <td>${date}</td>
+            <td>${customer}</td>
+            <td><span class="status-badge ${sale.type === 'membership' ? 'active' : 'frozen'}">${sale.type === 'membership' ? 'Membresía' : 'Tienda POS'}</span></td>
+            <td>${paymentMethod}</td>
+            <td><strong>$${(Number(sale.total) || 0).toFixed(2)}</strong></td>
+            <td class="finance-row-actions">
+              <button class="btn btn-outline btn-sm btn-icon" onclick="GymExporter.printReceipt(GymDB.data.sales.find(x => x.id === '${saleId}'))" title="Imprimir recibo"><i class="fa-solid fa-receipt"></i></button>
+              <button class="btn btn-outline btn-sm btn-icon" onclick="GymAppInstance.openFinanceEntryModal('sale', '${saleId}')" title="Editar venta"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-outline btn-sm btn-icon finance-delete" onclick="GymAppInstance.deleteFinanceEntry('sale', '${saleId}')" title="Eliminar venta"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    // Expenses Table
-    const expTable = document.getElementById('fin-expenses-table-body');
-    if (expTable) {
-      expTable.innerHTML = expenses.map(e => `
-        <tr>
-          <td><strong>${e.id}</strong></td>
-          <td>${e.date}</td>
-          <td>${e.concept}</td>
-          <td><span class="status-badge expired">${e.category}</span></td>
-          <td>${e.responsible}</td>
-          <td style="color: var(--secondary); font-weight: 800;">-$${e.amount.toFixed(2)}</td>
-        </tr>
-      `).join('');
+    const expensesTable = document.getElementById('fin-expenses-table-body');
+    if (expensesTable) {
+      expensesTable.innerHTML = expenses.map(expense => {
+        const expenseId = this.escapeFinanceHtml(expense.id);
+        return `
+          <tr>
+            <td><strong>${expenseId}</strong></td>
+            <td>${this.escapeFinanceHtml(expense.date || '')}</td>
+            <td>${this.escapeFinanceHtml(expense.concept || '')}</td>
+            <td><span class="status-badge expired">${this.escapeFinanceHtml(expense.category || '')}</span></td>
+            <td>${this.escapeFinanceHtml(expense.responsible || '')}</td>
+            <td style="color: var(--secondary); font-weight: 800;">-$${(Number(expense.amount) || 0).toFixed(2)}</td>
+            <td class="finance-row-actions">
+              <button class="btn btn-outline btn-sm btn-icon" onclick="GymAppInstance.openFinanceEntryModal('expense', '${expenseId}')" title="Editar egreso"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-outline btn-sm btn-icon finance-delete" onclick="GymAppInstance.deleteFinanceEntry('expense', '${expenseId}')" title="Eliminar egreso"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
   }
 
+  openFinanceEntryModal(kind, entryId) {
+    const isExpense = kind === 'expense';
+    const entries = isExpense ? window.GymDB.getExpenses() : (window.GymDB.data.sales || []);
+    const entry = entries.find(item => item.id === entryId);
+    if (!entry) return;
+
+    document.getElementById('finance-entry-title').textContent = isExpense ? 'Editar egreso' : 'Editar venta';
+    document.getElementById('finance-entry-kind').value = kind;
+    document.getElementById('finance-entry-id').value = entryId;
+    document.getElementById('finance-entry-description').value = isExpense ? entry.concept : (entry.customerName || 'Consumidor Final');
+    document.getElementById('finance-entry-date').value = String(entry.date || '').slice(0, 10);
+    document.getElementById('finance-entry-amount').value = Number(isExpense ? entry.amount : entry.total) || 0;
+    document.getElementById('finance-entry-category').value = entry.category || 'Otro';
+    document.getElementById('finance-entry-responsible').value = entry.responsible || '';
+    document.getElementById('finance-entry-payment').value = entry.paymentMethod || 'Efectivo';
+    document.getElementById('finance-expense-fields').style.display = isExpense ? '' : 'none';
+    document.getElementById('modal-finance-entry').classList.add('show');
+  }
+
+  saveFinanceEntry() {
+    const kind = document.getElementById('finance-entry-kind').value;
+    const entryId = document.getElementById('finance-entry-id').value;
+    const description = document.getElementById('finance-entry-description').value.trim();
+    const date = document.getElementById('finance-entry-date').value;
+    const amount = Number(document.getElementById('finance-entry-amount').value);
+    const paymentMethod = document.getElementById('finance-entry-payment').value;
+    if (!description || !date || !Number.isFinite(amount) || amount < 0) {
+      this.showToast('Completa la descripción, fecha y un monto válido (puede ser cero).', 'warning');
+      return;
+    }
+
+    const updates = kind === 'expense'
+      ? { concept: description, date, amount, category: document.getElementById('finance-entry-category').value, responsible: document.getElementById('finance-entry-responsible').value.trim() || 'Caja', paymentMethod }
+      : { customerName: description, date, total: amount, paymentMethod };
+    const saved = kind === 'expense'
+      ? window.GymDB.updateExpense(entryId, updates)
+      : window.GymDB.updateSale(entryId, updates);
+    if (!saved) {
+      this.showToast('No se pudo actualizar el movimiento.', 'error');
+      return;
+    }
+    this.closeModal('modal-finance-entry');
+    this.renderFinances();
+    this.renderDashboard();
+    this.showToast('Movimiento financiero actualizado.', 'success');
+  }
+
+  deleteFinanceEntry(kind, entryId) {
+    const isExpense = kind === 'expense';
+    const entry = (isExpense ? window.GymDB.getExpenses() : window.GymDB.data.sales || []).find(item => item.id === entryId);
+    if (!entry) return;
+    const label = isExpense ? entry.concept : (entry.customerName || entry.id);
+    const membershipWarning = !isExpense && entry.type === 'membership'
+      ? ' La membresía del socio no se cancelará automáticamente.'
+      : '';
+    if (!confirm(`¿Eliminar definitivamente "${label}"? Esta acción no se puede deshacer.${membershipWarning}`)) return;
+
+    const deleted = isExpense ? window.GymDB.deleteExpense(entryId) : window.GymDB.deleteSale(entryId);
+    if (!deleted) {
+      this.showToast('No se pudo eliminar el movimiento.', 'error');
+      return;
+    }
+    this.renderFinances();
+    this.renderDashboard();
+    this.showToast('Movimiento eliminado y saldo de caja actualizado.', 'success');
+  }
+
+  openCashAdminModal() {
+    const cash = window.GymDB.data.cashRegister;
+    document.getElementById('cash-admin-initial').value = Number(cash.initialCash) || 0;
+    document.getElementById('cash-admin-current').value = Number(cash.currentCash) || 0;
+    document.getElementById('cash-admin-open').checked = Boolean(cash.isOpen);
+    document.getElementById('modal-cash-admin').classList.add('show');
+  }
+
+  saveCashRegisterSettings() {
+    const updates = {
+      initialCash: Number(document.getElementById('cash-admin-initial').value),
+      currentCash: Number(document.getElementById('cash-admin-current').value),
+      isOpen: document.getElementById('cash-admin-open').checked
+    };
+    if (!window.GymDB.updateCashRegister(updates)) {
+      this.showToast('Los saldos deben ser números válidos iguales o mayores que cero.', 'warning');
+      return;
+    }
+    this.closeModal('modal-cash-admin');
+    this.renderFinances();
+    this.renderDashboard();
+    this.showToast('Caja actualizada y sincronizada.', 'success');
+  }
+
+  zeroCashBalance() {
+    if (!confirm('¿Poner en cero el fondo inicial y el efectivo actual? El historial de ventas y gastos se conservará.')) return;
+    const isOpen = document.getElementById('cash-admin-open').checked;
+    window.GymDB.updateCashRegister({ initialCash: 0, currentCash: 0, isOpen });
+    this.closeModal('modal-cash-admin');
+    this.renderFinances();
+    this.renderDashboard();
+    this.showToast('Saldos de caja puestos en cero. Historial conservado.', 'success');
+  }
+
   openAddExpenseModal() {
+    document.getElementById('exp-concept').value = '';
+    document.getElementById('exp-amount').value = '';
+    document.getElementById('exp-responsible').value = '';
     const modal = document.getElementById('modal-add-expense');
     modal.classList.add('show');
   }
 
   saveExpense() {
     const concept = document.getElementById('exp-concept').value.trim();
-    const category = document.getElementById('exp-category').value;
-    const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
-    const responsible = document.getElementById('exp-responsible').value.trim() || 'Caja';
-    const paymentMethod = document.getElementById('exp-payment-method').value;
-
-    if (!concept || amount <= 0) {
-      this.showToast("Ingresa un concepto y un monto válido", "warning");
+    const amount = Number(document.getElementById('exp-amount').value);
+    if (!concept || !Number.isFinite(amount) || amount <= 0) {
+      this.showToast('Ingresa un concepto y un monto mayor que cero.', 'warning');
       return;
     }
 
     window.GymDB.addExpense({
       concept,
-      category,
+      category: document.getElementById('exp-category').value,
       amount,
-      responsible,
-      paymentMethod,
+      responsible: document.getElementById('exp-responsible').value.trim() || 'Caja',
+      paymentMethod: document.getElementById('exp-payment-method').value,
       date: new Date().toISOString().split('T')[0]
     });
-
-    this.showToast(`Gasto de $${amount.toFixed(2)} registrado correctamente`, "info");
     this.closeModal('modal-add-expense');
     this.renderFinances();
+    this.renderDashboard();
+    this.showToast('Gasto registrado y sincronizado.', 'success');
   }
 
   // --- Member Self-Service Portal ---

@@ -1492,6 +1492,18 @@ body {
   overflow-wrap: anywhere;
 }
 
+.finance-row-actions {
+  white-space: nowrap;
+}
+
+.finance-row-actions .btn {
+  margin: 0 0.1rem;
+}
+
+.finance-delete {
+  color: var(--secondary);
+}
+
 #details-qr-container {
   display: inline-flex;
   flex-direction: column;
