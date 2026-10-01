@@ -1374,9 +1374,23 @@ class GymApp {
   }
 
   // --- Modals & Utilities ---
+  openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.add('show');
+      // Auto focus first text input if present
+      setTimeout(() => {
+        const input = modal.querySelector('input:not([type="hidden"]), select, textarea');
+        if (input) input.focus();
+      }, 100);
+    }
+  }
+
   closeModal(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) modal.classList.remove('show');
+    if (modal) {
+      modal.classList.remove('show');
+    }
   }
 
   toggleTheme() {
@@ -1607,12 +1621,31 @@ class GymApp {
     });
   }
 
+  onPermissionCheckboxChanged() {
+    const roleSelect = document.getElementById('u-role');
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+    const checkedCount = allPerms.filter(p => {
+      const chk = document.getElementById(`perm-${p}`);
+      return chk && chk.checked;
+    }).length;
+
+    if (checkedCount === allPerms.length) {
+      if (roleSelect && roleSelect.value !== 'admin') roleSelect.value = 'admin';
+    } else if (roleSelect && roleSelect.value === 'admin') {
+      roleSelect.value = 'custom';
+    }
+  }
+
   toggleAllPermissions(enable) {
     const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
     allPerms.forEach(p => {
       const chk = document.getElementById(`perm-${p}`);
       if (chk) chk.checked = enable;
     });
+    const roleSelect = document.getElementById('u-role');
+    if (roleSelect) {
+      roleSelect.value = enable ? 'admin' : 'custom';
+    }
   }
 
   saveUser() {
@@ -1634,7 +1667,7 @@ class GymApp {
     // Check duplicate username
     const existing = window.GymDB.getUserByUsername(username);
     if (existing && existing.id !== editId) {
-      this.showToast(`El nombre de usuario "${username}" ya está en uso. Elige otro.`, "error");
+      this.showToast(`El nombre de usuario "${username}" ya está en uso por otro empleado. Elige otro.`, "error");
       return;
     }
 
@@ -1646,7 +1679,7 @@ class GymApp {
       if (chk && chk.checked) permissions.push(p);
     });
 
-    if (role === 'admin') {
+    if (role === 'admin' || (permissions.length === allPerms.length)) {
       if (!permissions.includes('all')) permissions.unshift('all');
     }
 
@@ -1660,7 +1693,7 @@ class GymApp {
       username,
       pin,
       role,
-      roleTitle: roleTitle || (role === 'admin' ? 'Administrador' : 'Empleado'),
+      roleTitle: roleTitle || (role === 'admin' ? 'Administrador General' : 'Empleado'),
       status,
       phone,
       email,
@@ -1668,8 +1701,12 @@ class GymApp {
     };
 
     if (editId) {
-      window.GymDB.updateUser(editId, userData);
-      this.showToast(`Usuario "${name}" actualizado con éxito.`, "success");
+      const updated = window.GymDB.updateUser(editId, userData);
+      if (updated) {
+        this.showToast(`Usuario "${name}" y sus permisos se han actualizado correctamente.`, "success");
+      } else {
+        this.showToast("No se pudo actualizar el usuario.", "error");
+      }
     } else {
       window.GymDB.addUser(userData);
       this.showToast(`Empleado "${name}" registrado con éxito.`, "success");
