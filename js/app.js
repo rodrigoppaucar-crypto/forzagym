@@ -542,7 +542,7 @@ class GymApp {
     statusEl.textContent = member.status.toUpperCase();
 
     // Render Digital Pass QR in modal
-    GymQR.generate('details-qr-container', member.qrCode || member.id, { size: 140 });
+    GymQR.generate('details-qr-container', member.qrCode || member.id, { size: 220 });
 
     // Measurements Table
     const measTable = document.getElementById('details-meas-table');
@@ -1327,7 +1327,7 @@ class GymApp {
     statusBadge.textContent = member.status.toUpperCase();
 
     // Render QR Pass
-    GymQR.generate('portal-qr-card', member.qrCode || member.id, { size: 160 });
+    GymQR.generate('portal-qr-card', member.qrCode || member.id, { size: 240 });
 
     // Render Daily Routine Checklist
     const routines = window.GymDB.getRoutinesByMember(memberId);

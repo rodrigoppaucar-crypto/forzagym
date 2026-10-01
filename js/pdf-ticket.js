@@ -72,6 +72,11 @@ const GymExporter = {
   printMemberCard(member) {
     const settings = window.GymDB.data.settings;
     const plan = window.GymDB.getMembershipById(member.membershipId);
+    const qrValue = String(member.qrCode || member.id);
+    const qrCanvas = window.GymQR.generateCanvas(qrValue, { size: 720 });
+    const qrImage = qrCanvas.toDataURL('image/png');
+    const qrLabel = document.createElement('span');
+    qrLabel.textContent = qrValue;
 
     const printWin = window.open('', '_blank', 'width=450,height=650');
     if (!printWin) {
@@ -173,9 +178,24 @@ const GymExporter = {
           }
           .qr-wrapper {
             background: #fff;
-            padding: 10px;
-            border-radius: 12px;
-            display: inline-block;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+          }
+          .qr-wrapper img {
+            display: block;
+            width: 210px;
+            height: 210px;
+            image-rendering: pixelated;
+          }
+          .qr-value {
+            color: #111827;
+            font: 700 11px/1.3 Consolas, 'Courier New', monospace;
+            overflow-wrap: anywhere;
           }
           .footer-note {
             font-size: 9px;
@@ -216,44 +236,22 @@ const GymExporter = {
             </div>
           </div>
 
-          <div class="qr-wrapper" id="print-qr"></div>
+          <div class="qr-wrapper" id="print-qr">
+            <img id="print-qr-image" src="${qrImage}" alt="Código QR de acceso" />
+            <span class="qr-value">${qrLabel.innerHTML}</span>
+          </div>
 
           <div class="footer-note">Presenta este código en el torniquete de recepción</div>
         </div>
 
         <script>
-          // Draw quick QR pattern on print
-          const canvas = document.createElement('canvas');
-          canvas.width = 120;
-          canvas.height = 120;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0,0,120,120);
-          ctx.fillStyle = '#000000';
-          
-          // Pattern
-          ctx.fillRect(10, 10, 30, 30);
-          ctx.fillRect(80, 10, 30, 30);
-          ctx.fillRect(10, 80, 30, 30);
-          ctx.clearRect(16, 16, 18, 18);
-          ctx.clearRect(86, 16, 18, 18);
-          ctx.clearRect(16, 86, 18, 18);
-          ctx.fillRect(20, 20, 10, 10);
-          ctx.fillRect(90, 20, 10, 10);
-          ctx.fillRect(20, 90, 10, 10);
-
-          for(let r=0; r<10; r++) {
-            for(let c=0; c<10; c++) {
-              if(Math.random() > 0.5) {
-                ctx.fillRect(45 + (c*3), 10 + (r*10), 2.5, 2.5);
-              }
-            }
+          const printQrImage = document.getElementById('print-qr-image');
+          const printWhenReady = () => setTimeout(() => window.print(), 250);
+          if (printQrImage.complete) {
+            printWhenReady();
+          } else {
+            printQrImage.addEventListener('load', printWhenReady, { once: true });
           }
-          document.getElementById('print-qr').appendChild(canvas);
-
-          setTimeout(() => {
-            window.print();
-          }, 400);
         <\/script>
       </body>
       </html>
