@@ -685,7 +685,7 @@ class GymDatabase {
     return this.currentUser || this.loadCurrentUser();
   }
 
-  save(dataToSave = null) {
+  save(dataToSave = null, skipCloudPush = false) {
     if (dataToSave) {
       this.data = dataToSave;
     }
@@ -693,6 +693,30 @@ class GymDatabase {
       localStorage.setItem(DB_KEY, JSON.stringify(this.data));
     } catch (e) {
       console.error("Error saving database to LocalStorage:", e);
+    }
+
+    // Automatically synchronize to Firebase Cloud Database in real-time
+    if (!skipCloudPush && window.GymFirebaseSync && window.GymFirebaseSync.isConnected) {
+      window.GymFirebaseSync.pushData(this.data);
+    }
+  }
+
+  applyCloudData(cloudData, updatedAt) {
+    if (!cloudData || typeof cloudData !== 'object') return;
+    this.data = cloudData;
+    this.save(null, true); // save locally without re-pushing to cloud
+
+    // Sync active user session
+    if (this.currentUser) {
+      const found = (this.data.users || []).find(u => u.id === this.currentUser.id);
+      if (found) {
+        this.currentUser = found;
+      }
+    }
+
+    // Notify UI to re-render in real-time
+    if (window.GymAppInstance && typeof window.GymAppInstance.onCloudDataSync === 'function') {
+      window.GymAppInstance.onCloudDataSync();
     }
   }
 

@@ -19,9 +19,24 @@ class GymApp {
     this.updateHeaderUserProfile();
     this.renderUserNavPermissions();
 
+    // Initialize Firebase Cloud Realtime Sync
+    if (window.GymFirebaseSync) {
+      window.GymFirebaseSync.init();
+    }
+
     const initialView = this.hasPermission('dashboard') ? 'dashboard' : this.getFirstPermittedView();
     this.renderView(initialView);
     this.setupPOS();
+  }
+
+  // Real-time callback when data updates from other devices via Firebase
+  onCloudDataSync() {
+    this.updateOccupancy();
+    this.updateHeaderUserProfile();
+    this.renderUserNavPermissions();
+    if (this.currentView) {
+      this.renderView(this.currentView);
+    }
   }
 
   // --- Role-Based Access Control (RBAC) & Permissions ---
@@ -1314,6 +1329,68 @@ class GymApp {
     document.getElementById('set-tax-rate').value = s.taxRate || 15;
     document.getElementById('set-capacity').value = s.maxCapacity || 120;
     document.getElementById('set-ticket-footer').value = s.ticketFooter || '';
+
+    // Load Firebase config into inputs if available
+    const fbConfig = window.GymFirebaseSync ? window.GymFirebaseSync.getConfig() : null;
+    if (fbConfig) {
+      if (document.getElementById('fb-apiKey')) document.getElementById('fb-apiKey').value = fbConfig.apiKey || '';
+      if (document.getElementById('fb-projectId')) document.getElementById('fb-projectId').value = fbConfig.projectId || '';
+      if (document.getElementById('fb-authDomain')) document.getElementById('fb-authDomain').value = fbConfig.authDomain || '';
+      if (document.getElementById('fb-storageBucket')) document.getElementById('fb-storageBucket').value = fbConfig.storageBucket || '';
+      if (document.getElementById('fb-appId')) document.getElementById('fb-appId').value = fbConfig.appId || '';
+    }
+  }
+
+  saveFirebaseConfig() {
+    const apiKey = document.getElementById('fb-apiKey').value.trim();
+    const projectId = document.getElementById('fb-projectId').value.trim();
+    const authDomain = document.getElementById('fb-authDomain').value.trim() || `${projectId}.firebaseapp.com`;
+    const storageBucket = document.getElementById('fb-storageBucket').value.trim() || `${projectId}.appspot.com`;
+    const appId = document.getElementById('fb-appId').value.trim();
+
+    if (!apiKey || !projectId || !appId) {
+      this.showToast("Por favor completa al menos API Key, Project ID y App ID (*)", "warning");
+      return;
+    }
+
+    const config = { apiKey, projectId, authDomain, storageBucket, appId };
+    window.GymFirebaseSync.saveConfig(config);
+    const connected = window.GymFirebaseSync.connect(config);
+
+    if (connected) {
+      this.showToast("Conectando con Firebase Firestore en la nube...", "info");
+    } else {
+      this.showToast("Error al inicializar conexión con Firebase.", "error");
+    }
+  }
+
+  async syncNowWithCloud() {
+    if (!window.GymFirebaseSync.isConnected) {
+      this.showToast("No hay conexión activa con Firebase. Guarda tus credenciales primero.", "warning");
+      return;
+    }
+    await window.GymFirebaseSync.pushFullLocalData();
+    this.showToast("¡Base de datos local sincronizada con la nube en vivo!", "success");
+  }
+
+  disconnectFirebase() {
+    if (confirm("¿Deseas desconectar Firebase? El sistema pasará a modo local independiente.")) {
+      localStorage.removeItem('FORZAGYM_FIREBASE_CONFIG');
+      if (window.GymFirebaseSync.unsubscribeListener) {
+        window.GymFirebaseSync.unsubscribeListener();
+        window.GymFirebaseSync.unsubscribeListener = null;
+      }
+      window.GymFirebaseSync.isConnected = false;
+      window.GymFirebaseSync.updateStatusUI('disconnected', 'Modo Local (Desconectado)');
+
+      const fields = ['fb-apiKey', 'fb-projectId', 'fb-authDomain', 'fb-storageBucket', 'fb-appId'];
+      fields.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) el.value = '';
+      });
+
+      this.showToast("Firebase desconectado. Operando en modo local.", "info");
+    }
   }
 
   saveSettings() {

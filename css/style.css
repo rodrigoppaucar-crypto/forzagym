@@ -452,6 +452,73 @@ body {
   position: relative;
 }
 
+/* Cloud Sync Status Badge */
+.cloud-sync-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.cloud-sync-badge:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-glow);
+}
+
+.cloud-sync-badge .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: var(--transition);
+}
+
+.cloud-sync-badge.status-connected {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent);
+}
+
+.cloud-sync-badge.status-connected .status-dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.cloud-sync-badge.status-connecting,
+.cloud-sync-badge.status-syncing {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+.cloud-sync-badge.status-connecting .status-dot,
+.cloud-sync-badge.status-syncing .status-dot {
+  background: var(--warning);
+  animation: pulseDot 1.2s infinite;
+}
+
+.cloud-sync-badge.status-error {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--secondary);
+}
+
+.cloud-sync-badge.status-error .status-dot {
+  background: var(--secondary);
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
 .user-profile-btn {
   display: flex;
   align-items: center;

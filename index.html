@@ -148,6 +148,12 @@
             <span>Torniquete</span>
           </button>
 
+          <!-- Cloud Sync Status Pill -->
+          <div class="cloud-sync-badge status-disconnected" id="cloud-sync-status-badge" onclick="GymAppInstance.renderView('settings')" title="Estado de Sincronización en la Nube">
+            <span class="status-dot" id="cloud-status-dot"></span>
+            <span id="cloud-status-text">Modo Local</span>
+          </div>
+
           <!-- Audio FX Toggle -->
           <button class="action-btn-circle" id="btn-toggle-sound" onclick="GymAppInstance.toggleSound()" title="Sonidos del Sistema">
             <i class="fa-solid fa-volume-high"></i>
@@ -880,6 +886,74 @@
             <div class="form-group">
               <label class="form-label">Mensaje al Pie del Recibo / Ticket:</label>
               <input type="text" id="set-ticket-footer" class="form-control" />
+            </div>
+          </div>
+
+          <!-- Firebase Cloud Realtime Database Configuration -->
+          <div class="card" style="grid-column: 1 / -1; border-top: 4px solid var(--accent);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 class="card-title" style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                  <i class="fa-solid fa-cloud-bolt" style="color: var(--accent);"></i>
+                  <span>Sincronización en la Nube en Tiempo Real (Firebase Cloud)</span>
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">
+                  Conecta tu base de datos gratuita de Firebase para que todos tus dispositivos (teléfonos, tablets, recepción y dueños) compartan la misma información en vivo.
+                </p>
+              </div>
+              <div id="settings-cloud-status-msg"></div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex: 2;">
+                <label class="form-label">API Key (*):</label>
+                <input type="text" id="fb-apiKey" class="form-control" placeholder="AIzaSy..." />
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label">Project ID (*):</label>
+                <input type="text" id="fb-projectId" class="form-control" placeholder="forzagym-cloud" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Auth Domain:</label>
+                <input type="text" id="fb-authDomain" class="form-control" placeholder="forzagym-cloud.firebaseapp.com" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Storage Bucket:</label>
+                <input type="text" id="fb-storageBucket" class="form-control" placeholder="forzagym-cloud.appspot.com" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">App ID (*):</label>
+                <input type="text" id="fb-appId" class="form-control" placeholder="1:123456789:web:abcdef..." />
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 1rem; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="GymAppInstance.saveFirebaseConfig()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Guardar y Conectar a Firebase
+              </button>
+              <button class="btn btn-outline" onclick="GymAppInstance.syncNowWithCloud()">
+                <i class="fa-solid fa-arrows-rotate"></i> Forzar Sincronización Ahora
+              </button>
+              <button class="btn btn-outline" onclick="GymAppInstance.disconnectFirebase()" style="color: var(--secondary);">
+                <i class="fa-solid fa-unlink"></i> Desconectar Nube
+              </button>
+            </div>
+
+            <!-- Help Guide -->
+            <div style="margin-top: 1.25rem; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: var(--radius-sm); padding: 1rem;">
+              <strong style="color: var(--primary); font-size: 0.88rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                <i class="fa-solid fa-circle-question"></i> ¿Cómo obtener tus credenciales gratuitas de Firebase en 2 minutos?
+              </strong>
+              <ol style="margin-left: 1.25rem; font-size: 0.82rem; color: var(--text-muted); line-height: 1.6;">
+                <li>Entra a <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--primary); text-decoration: underline;">console.firebase.google.com</a> con tu cuenta de Google.</li>
+                <li>Haz clic en <strong>"Crear un proyecto"</strong> (ejemplo: <code>forzagym-cloud</code>).</li>
+                <li>En el menú lateral, ve a <strong>"Compilación" &gt; "Firestore Database"</strong> y haz clic en <strong>Crear base de datos</strong>.</li>
+                <li>En la pestaña <strong>"Reglas" (Rules)</strong> de Firestore, pon <code>allow read, write: if true;</code> para permitir acceso de tu web.</li>
+                <li>Ve a <strong>Configuración del Proyecto ⚙️ &gt; General &gt; Tus apps</strong>, añade una app web (<code>&lt;/&gt;</code>), copia los campos de configuración y pégalos aquí arriba.</li>
+              </ol>
             </div>
           </div>
 
@@ -1621,7 +1695,12 @@
   <!-- Print Container -->
   <div id="printable-ticket"></div>
 
+  <!-- Firebase Cloud Realtime Database SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
   <!-- Core Scripts -->
+  <script src="js/firebase-sync.js"></script>
   <script src="js/db.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/qr.js"></script>
