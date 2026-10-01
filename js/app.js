@@ -8,6 +8,7 @@ class GymApp {
     this.currentView = 'dashboard';
     this.currentUser = null;
     this.posCart = [];
+    this.accessCameraAutoStartRequested = false;
     this.init();
   }
 
@@ -144,6 +145,11 @@ class GymApp {
       return;
     }
 
+    if (this.currentView === 'access' && viewName !== 'access' && window.GymScanner) {
+      window.GymScanner.stopCamera();
+      this.accessCameraAutoStartRequested = false;
+    }
+
     this.currentView = viewName;
 
     // Update nav item active states
@@ -179,6 +185,10 @@ class GymApp {
         break;
       case 'access':
         this.renderAccessControl();
+        if (!this.accessCameraAutoStartRequested && window.GymScanner) {
+          this.accessCameraAutoStartRequested = true;
+          window.GymScanner.startCamera();
+        }
         break;
       case 'memberships':
         this.renderMemberships();
@@ -656,16 +666,47 @@ class GymApp {
     `).join('');
   }
 
+  findMemberFromScan(rawValue) {
+    const candidates = [String(rawValue || '').trim()];
+    const addCandidate = value => {
+      if (value !== undefined && value !== null) {
+        const candidate = String(value).trim();
+        if (candidate && !candidates.includes(candidate)) candidates.push(candidate);
+      }
+    };
+
+    try {
+      const payload = JSON.parse(candidates[0]);
+      ['qrCode', 'qr', 'memberId', 'member_id', 'id', 'dni', 'code'].forEach(key => addCandidate(payload[key]));
+    } catch (e) {
+      // Plain-text QR payloads are expected and need no JSON parsing.
+    }
+
+    try {
+      const url = new URL(candidates[0]);
+      ['qr', 'code', 'member', 'memberId', 'id', 'dni'].forEach(key => addCandidate(url.searchParams.get(key)));
+      addCandidate(url.pathname.split('/').filter(Boolean).pop());
+    } catch (e) {
+      // Non-URL payloads are checked as-is.
+    }
+
+    for (const candidate of candidates) {
+      const member = window.GymDB.getMemberById(candidate);
+      if (member) return member;
+    }
+    return null;
+  }
+
   simulateScan(codeOrDni = null) {
     const input = document.getElementById('turnstile-scan-input');
-    const query = (codeOrDni || (input ? input.value : '')).trim();
+    const query = String(codeOrDni || (input ? input.value : '')).trim();
 
     if (!query) {
       this.showToast("Ingresa un DNI, ID de socio o código QR", "warning");
       return;
     }
 
-    const member = window.GymDB.getMemberById(query);
+    const member = this.findMemberFromScan(query);
     const resultBox = document.getElementById('turnstile-result-box');
     const memberCardBox = document.getElementById('turnstile-member-card');
 

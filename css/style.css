@@ -1470,9 +1470,26 @@ body {
 
 .pass-qr-box {
   background: #fff;
-  padding: 0.75rem;
-  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.qr-human-readable {
+  display: block;
+  max-width: 100%;
+  color: #111827;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 /* Toast Notifications */

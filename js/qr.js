@@ -549,6 +549,10 @@
     container.innerHTML = '';
     var canvas = QRCode.generateCanvas(text || 'FORZAGYM', options);
     container.appendChild(canvas);
+    var readableValue = document.createElement('span');
+    readableValue.className = 'qr-human-readable';
+    readableValue.textContent = String(text || 'FORZAGYM');
+    container.appendChild(readableValue);
   }
 
   window.GymQR = {
@@ -565,6 +569,7 @@ class GymAccessScannerManager {
   constructor() {
     this.html5QrCode = null;
     this.isScanning = false;
+    this.isStarting = false;
     this.currentCameraId = null;
     this.availableCameras = [];
     this.lastScanTime = 0;
@@ -596,7 +601,7 @@ class GymAccessScannerManager {
 
   // Start Real-Time Camera Stream
   async startCamera(containerId = 'scanner-camera-viewport', onScanSuccessCallback = null) {
-    if (this.isScanning) {
+    if (this.isScanning || this.isStarting) {
       console.log("Camera is already scanning.");
       return;
     }
@@ -610,6 +615,7 @@ class GymAccessScannerManager {
       return;
     }
 
+    this.isStarting = true;
     try {
       if (!this.html5QrCode) {
         this.html5QrCode = new Html5Qrcode(containerId);
@@ -672,6 +678,8 @@ class GymAccessScannerManager {
       } else {
         alert(`No se pudo iniciar la cámara: ${e.message || 'Verifica que tu dispositivo tenga cámara activa.'}`);
       }
+    } finally {
+      this.isStarting = false;
     }
   }
 
