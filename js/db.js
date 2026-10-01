@@ -565,6 +565,64 @@ const INITIAL_DATA = {
       responsible: "Recepción",
       paymentMethod: "Efectivo"
     }
+  ],
+  users: [
+    {
+      id: "usr_admin",
+      name: "Administrador Principal",
+      username: "admin",
+      pin: "1234",
+      email: "admin@forzagym.com",
+      phone: "+593 99 876 5432",
+      role: "admin",
+      roleTitle: "Administrador General",
+      status: "active",
+      avatar: "AD",
+      permissions: ["all"],
+      createdAt: "2026-01-01"
+    },
+    {
+      id: "usr_reception",
+      name: "Carolina Vega",
+      username: "recepcion",
+      pin: "1234",
+      email: "carolina@forzagym.com",
+      phone: "+593 98 765 4321",
+      role: "receptionist",
+      roleTitle: "Recepcionista / Front Desk",
+      status: "active",
+      avatar: "CV",
+      permissions: ["access", "members", "pos", "classes", "finances"],
+      createdAt: "2026-02-15"
+    },
+    {
+      id: "usr_coach",
+      name: "Alex 'Forza' Rivera",
+      username: "coach",
+      pin: "1234",
+      email: "alex.coach@forzagym.com",
+      phone: "+593 98 123 4567",
+      role: "trainer",
+      roleTitle: "Head Coach & Musculación",
+      status: "active",
+      avatar: "AR",
+      permissions: ["routines", "classes", "members"],
+      createdAt: "2026-03-01"
+    },
+    {
+      id: "usr_cashier",
+      name: "Mateo Morales",
+      username: "caja",
+      pin: "1234",
+      email: "mateo@forzagym.com",
+      phone: "+593 97 112 2334",
+      role: "cashier",
+      roleTitle: "Cajero & Ventas POS",
+      status: "active",
+      avatar: "MM",
+      permissions: ["pos", "finances"],
+      createdAt: "2026-04-10"
+    }
   ]
 };
 
@@ -572,19 +630,59 @@ const INITIAL_DATA = {
 class GymDatabase {
   constructor() {
     this.data = this.load();
+    this.currentUser = this.loadCurrentUser();
   }
 
   load() {
     try {
       const stored = localStorage.getItem(DB_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (!parsed.users || !Array.isArray(parsed.users) || parsed.users.length === 0) {
+          parsed.users = JSON.parse(JSON.stringify(INITIAL_DATA.users));
+          this.save(parsed);
+        }
+        return parsed;
       }
     } catch (e) {
       console.warn("Could not load stored database, reverting to seed data:", e);
     }
     this.save(INITIAL_DATA);
     return JSON.parse(JSON.stringify(INITIAL_DATA));
+  }
+
+  loadCurrentUser() {
+    try {
+      const stored = localStorage.getItem('FORZAGYM_CURRENT_USER');
+      if (stored) {
+        const usr = JSON.parse(stored);
+        // Verify user still exists in DB
+        const found = (this.data.users || []).find(u => u.id === usr.id);
+        if (found && found.status === 'active') {
+          return found;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load active user:", e);
+    }
+    // Default to admin
+    const defaultAdmin = (this.data.users || []).find(u => u.role === 'admin') || INITIAL_DATA.users[0];
+    this.setCurrentUser(defaultAdmin);
+    return defaultAdmin;
+  }
+
+  setCurrentUser(user) {
+    this.currentUser = user;
+    try {
+      localStorage.setItem('FORZAGYM_CURRENT_USER', JSON.stringify(user));
+    } catch (e) {
+      console.error("Error setting active user:", e);
+    }
+    return this.currentUser;
+  }
+
+  getCurrentUser() {
+    return this.currentUser || this.loadCurrentUser();
   }
 
   save(dataToSave = null) {
@@ -824,6 +922,112 @@ class GymDatabase {
     }
     this.save();
     return newExp;
+  }
+
+  // --- Users & Staff Management (RBAC) ---
+  getUsers() {
+    return this.data.users || [];
+  }
+
+  getUserById(id) {
+    return this.getUsers().find(u => u.id === id);
+  }
+
+  getUserByUsername(username) {
+    if (!username) return null;
+    return this.getUsers().find(u => u.username.toLowerCase() === username.trim().toLowerCase());
+  }
+
+  addUser(userData) {
+    const newId = `usr_${Date.now().toString(36)}`;
+    const initials = (userData.name || 'US')
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+
+    const newUser = {
+      id: newId,
+      name: userData.name || "Nuevo Empleado",
+      username: (userData.username || `emp_${Date.now()}`).trim().toLowerCase(),
+      pin: userData.pin || "1234",
+      email: userData.email || "",
+      phone: userData.phone || "",
+      role: userData.role || "receptionist",
+      roleTitle: userData.roleTitle || "Empleado",
+      status: userData.status || "active",
+      avatar: initials,
+      permissions: Array.isArray(userData.permissions) && userData.permissions.length > 0 
+        ? userData.permissions 
+        : ["access", "members"],
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    if (!this.data.users) this.data.users = [];
+    this.data.users.push(newUser);
+    this.save();
+    return newUser;
+  }
+
+  updateUser(id, updatedFields) {
+    if (!this.data.users) this.data.users = [];
+    const index = this.data.users.findIndex(u => u.id === id);
+    if (index !== -1) {
+      if (updatedFields.name) {
+        updatedFields.avatar = updatedFields.name
+          .split(' ')
+          .map(n => n[0])
+          .join('')
+          .substring(0, 2)
+          .toUpperCase();
+      }
+      this.data.users[index] = { ...this.data.users[index], ...updatedFields };
+      this.save();
+
+      // If updating current active user, sync session
+      if (this.currentUser && this.currentUser.id === id) {
+        this.setCurrentUser(this.data.users[index]);
+      }
+
+      return this.data.users[index];
+    }
+    return null;
+  }
+
+  deleteUser(id) {
+    if (!this.data.users) return false;
+    // Protect the primary admin user from deletion
+    const user = this.getUserById(id);
+    if (user && user.role === 'admin' && this.getUsers().filter(u => u.role === 'admin').length <= 1) {
+      return { success: false, message: "No se puede eliminar el único administrador del sistema." };
+    }
+
+    this.data.users = this.data.users.filter(u => u.id !== id);
+    this.save();
+
+    // If current logged-in user was deleted, reset to admin
+    if (this.currentUser && this.currentUser.id === id) {
+      const defaultAdmin = this.getUsers().find(u => u.role === 'admin') || INITIAL_DATA.users[0];
+      this.setCurrentUser(defaultAdmin);
+    }
+
+    return { success: true };
+  }
+
+  authenticateUser(username, pin) {
+    const user = this.getUserByUsername(username);
+    if (!user) {
+      return { success: false, message: "Usuario no encontrado." };
+    }
+    if (user.status !== 'active') {
+      return { success: false, message: "Este usuario se encuentra inactivo. Consulta con el administrador." };
+    }
+    if (user.pin !== pin.trim()) {
+      return { success: false, message: "PIN o contraseña incorrectos." };
+    }
+    this.setCurrentUser(user);
+    return { success: true, user };
   }
 
   // --- Backup & Restore ---

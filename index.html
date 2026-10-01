@@ -42,55 +42,61 @@
 
       <nav class="sidebar-nav">
         <div class="nav-section-title">Principal</div>
-        <button class="nav-item active" data-view="dashboard">
+        <button class="nav-item active" data-view="dashboard" data-permission="dashboard">
           <i class="fa-solid fa-gauge-high"></i>
           <span>Dashboard</span>
         </button>
 
-        <button class="nav-item" data-view="access">
+        <button class="nav-item" data-view="access" data-permission="access">
           <i class="fa-solid fa-id-card-clip"></i>
           <span>Control de Acceso</span>
           <span class="nav-badge" style="background: var(--accent);">VIVO</span>
         </button>
 
-        <button class="nav-item" data-view="members">
+        <button class="nav-item" data-view="members" data-permission="members">
           <i class="fa-solid fa-users"></i>
           <span>Socios & Clientes</span>
         </button>
 
-        <button class="nav-item" data-view="memberships">
+        <button class="nav-item" data-view="memberships" data-permission="memberships">
           <i class="fa-solid fa-ticket"></i>
           <span>Planes & Membresías</span>
         </button>
 
         <div class="nav-section-title">Comercial & Servicios</div>
-        <button class="nav-item" data-view="pos">
+        <button class="nav-item" data-view="pos" data-permission="pos">
           <i class="fa-solid fa-cash-register"></i>
           <span>Tienda POS & Stock</span>
         </button>
 
-        <button class="nav-item" data-view="classes">
+        <button class="nav-item" data-view="classes" data-permission="classes">
           <i class="fa-solid fa-calendar-days"></i>
           <span>Clases & Reservas</span>
         </button>
 
-        <button class="nav-item" data-view="routines">
+        <button class="nav-item" data-view="routines" data-permission="routines">
           <i class="fa-solid fa-dumbbell"></i>
           <span>Rutinas & Medidas</span>
         </button>
 
         <div class="nav-section-title">Administración</div>
-        <button class="nav-item" data-view="finances">
+        <button class="nav-item" data-view="finances" data-permission="finances">
           <i class="fa-solid fa-wallet"></i>
           <span>Caja & Finanzas</span>
         </button>
 
-        <button class="nav-item" data-view="member-portal">
+        <button class="nav-item" data-view="users" data-permission="users">
+          <i class="fa-solid fa-user-shield"></i>
+          <span>Personal & Empleados</span>
+          <span class="nav-badge" style="background: var(--purple);">ADMIN</span>
+        </button>
+
+        <button class="nav-item" data-view="member-portal" data-permission="member-portal">
           <i class="fa-solid fa-mobile-screen-button"></i>
           <span>Portal del Socio</span>
         </button>
 
-        <button class="nav-item" data-view="settings">
+        <button class="nav-item" data-view="settings" data-permission="settings">
           <i class="fa-solid fa-sliders"></i>
           <span>Configuración</span>
         </button>
@@ -152,12 +158,45 @@
             <i class="fa-solid fa-circle-half-stroke"></i>
           </button>
 
-          <!-- User Profile -->
-          <div class="user-profile-menu" onclick="GymAppInstance.renderView('settings')">
-            <div class="user-avatar">AD</div>
-            <div class="user-meta">
-              <span class="user-name">Administrador</span>
-              <span class="user-role-badge">Online</span>
+          <!-- User Profile & Session Menu -->
+          <div class="user-profile-menu" id="user-profile-menu-container" style="position: relative;">
+            <div class="user-profile-btn" onclick="GymAppInstance.toggleUserDropdown(event)">
+              <div class="user-avatar" id="header-user-avatar">AD</div>
+              <div class="user-meta">
+                <span class="user-name" id="header-user-name">Administrador</span>
+                <span class="user-role-badge" id="header-user-role">ADMIN</span>
+              </div>
+              <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; color: var(--text-dim); margin-left: 6px;"></i>
+            </div>
+
+            <!-- Profile Dropdown Menu -->
+            <div class="user-dropdown-menu" id="user-dropdown-menu">
+              <div class="user-dropdown-header">
+                <div class="user-avatar" id="dropdown-user-avatar" style="width: 38px; height: 38px; font-size: 0.95rem;">AD</div>
+                <div style="overflow: hidden;">
+                  <div class="user-name" id="dropdown-user-name" style="font-size: 0.9rem; font-weight: 700;">Administrador Principal</div>
+                  <div id="dropdown-user-role-title" style="font-size: 0.75rem; color: var(--primary);">Administrador General</div>
+                  <div id="dropdown-user-username" style="font-size: 0.72rem; color: var(--text-dim);">@admin</div>
+                </div>
+              </div>
+              <div class="user-dropdown-divider"></div>
+              <a href="#" class="user-dropdown-item" onclick="GymAppInstance.openSwitchUserModal(); return false;">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                <span>Cambiar de Usuario / Login</span>
+              </a>
+              <a href="#" class="user-dropdown-item" id="dropdown-link-users" onclick="GymAppInstance.renderView('users'); return false;">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Gestionar Empleados & Roles</span>
+              </a>
+              <a href="#" class="user-dropdown-item" id="dropdown-link-settings" onclick="GymAppInstance.renderView('settings'); return false;">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Ajustes del Gimnasio</span>
+              </a>
+              <div class="user-dropdown-divider"></div>
+              <a href="#" class="user-dropdown-item text-danger" onclick="GymAppInstance.logoutUser(); return false;">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Cerrar Sesión</span>
+              </a>
             </div>
           </div>
         </div>
@@ -873,6 +912,93 @@
         </div>
       </section>
 
+      <!-- ==========================================================================
+           VIEW 10: GESTIÓN DE PERSONAL & EMPLEADOS (RBAC)
+           ========================================================================== -->
+      <section id="view-users" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Gestión de Personal, Empleados & Permisos</h2>
+            <p>Control de acceso basado en roles (RBAC) y asignación granular de funciones del sistema</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-primary" onclick="GymAppInstance.openNewUserModal()">
+              <i class="fa-solid fa-user-plus"></i> Nuevo Empleado / Usuario
+            </button>
+            <button class="btn btn-outline" onclick="GymAppInstance.openSwitchUserModal()">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i> Cambiar Usuario Activo
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric badges for staff -->
+        <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 1.5rem;">
+          <div class="metric-card" style="--metric-color: var(--primary);">
+            <div class="metric-icon"><i class="fa-solid fa-users-gear"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Total Empleados & Staff</div>
+              <div class="metric-value" id="kpi-total-users">0</div>
+              <div class="metric-trend trend-up"><i class="fa-solid fa-id-badge"></i> Registrados</div>
+            </div>
+          </div>
+          <div class="metric-card" style="--metric-color: var(--accent);">
+            <div class="metric-icon"><i class="fa-solid fa-user-check"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Personal Activo</div>
+              <div class="metric-value" id="kpi-active-users">0</div>
+              <div class="metric-trend trend-up"><i class="fa-solid fa-circle-check"></i> Acceso habilitado</div>
+            </div>
+          </div>
+          <div class="metric-card" style="--metric-color: var(--purple);">
+            <div class="metric-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Administradores</div>
+              <div class="metric-value" id="kpi-admin-users">0</div>
+              <div class="metric-trend" style="color: var(--purple);"><i class="fa-solid fa-crown"></i> Acceso Total</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users Table & Filter Card -->
+        <div class="card">
+          <div class="table-toolbar">
+            <div class="search-input-wrapper">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="users-search-input" placeholder="Buscar por nombre, usuario, cargo o correo..." oninput="GymAppInstance.renderUsers(this.value)" />
+            </div>
+            <div class="table-filters">
+              <select id="users-role-filter" class="form-select" onchange="GymAppInstance.renderUsers()">
+                <option value="all">Todos los Roles</option>
+                <option value="admin">Administradores</option>
+                <option value="receptionist">Recepción / Front Desk</option>
+                <option value="trainer">Entrenadores / Coaches</option>
+                <option value="cashier">Cajeros / Ventas</option>
+                <option value="custom">Personalizados</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Usuario & Empleado</th>
+                  <th>Cargo / Puesto</th>
+                  <th>Usuario (Login)</th>
+                  <th>Contacto</th>
+                  <th>Funciones & Módulos Habilitados</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body">
+                <!-- Dynamic user rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
     </div>
   </div>
 
@@ -1212,6 +1338,279 @@
         <button class="btn btn-primary" onclick="GymAppInstance.saveMembershipPlan()">
           <i class="fa-solid fa-floppy-disk"></i> Guardar Plan
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Create / Edit Staff & User (RBAC) -->
+  <div id="modal-user-form" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-user-shield" style="color: var(--purple);"></i>
+          <span id="user-form-title">Registrar Empleado / Usuario</span>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="user-edit-id" value="" />
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre Completo (*):</label>
+            <input type="text" id="u-name" class="form-control" placeholder="Ej: Carlos Zambrano" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre de Usuario (Login) (*):</label>
+            <input type="text" id="u-username" class="form-control" placeholder="Ej: czambrano" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">PIN / Contraseña (*):</label>
+            <input type="password" id="u-pin" class="form-control" placeholder="Ej: 1234" required />
+            <span style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; display: block;">Recomendado: 4 a 6 dígitos o caracteres</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rol / Perfil Base (*):</label>
+            <select id="u-role" class="form-select" onchange="GymAppInstance.onRolePresetChanged(this.value)">
+              <option value="admin">Administrador General (Acceso Total)</option>
+              <option value="receptionist" selected>Recepcionista / Front Desk</option>
+              <option value="trainer">Entrenador / Coach Físico</option>
+              <option value="cashier">Cajero / Tienda POS</option>
+              <option value="custom">Personalizado (Elegir funciones manualmente)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Título del Cargo (Visible):</label>
+            <input type="text" id="u-role-title" class="form-control" placeholder="Ej: Recepción & Atención al Cliente" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estado de la Cuenta:</label>
+            <select id="u-status" class="form-select">
+              <option value="active">Activo (Puede ingresar al sistema)</option>
+              <option value="inactive">Inactivo / Bloqueado</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Teléfono / WhatsApp:</label>
+            <input type="text" id="u-phone" class="form-control" placeholder="Ej: +593 99 123 4567" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico:</label>
+            <input type="email" id="u-email" class="form-control" placeholder="Ej: empleado@forzagym.com" />
+          </div>
+        </div>
+
+        <!-- Permissions Matrix -->
+        <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <label class="form-label" style="font-weight: 700; margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-list-check" style="color: var(--primary);"></i>
+              <span>Asignación Granular de Funciones & Módulos</span>
+            </label>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;" onclick="GymAppInstance.toggleAllPermissions(true)">
+                <i class="fa-solid fa-check-double"></i> Marcar Todos
+              </button>
+              <button type="button" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;" onclick="GymAppInstance.toggleAllPermissions(false)">
+                <i class="fa-solid fa-ban"></i> Limpiar
+              </button>
+            </div>
+          </div>
+
+          <div class="permissions-grid">
+            <label class="permission-item">
+              <input type="checkbox" id="perm-dashboard" value="dashboard" />
+              <div class="perm-info">
+                <i class="fa-solid fa-gauge-high"></i>
+                <div>
+                  <strong>Dashboard</strong>
+                  <span>Métricas globales y analíticas en vivo</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-access" value="access" />
+              <div class="perm-info">
+                <i class="fa-solid fa-id-card-clip"></i>
+                <div>
+                  <strong>Control de Acceso</strong>
+                  <span>Torniquete virtual, escaneo QR y registro</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-members" value="members" />
+              <div class="perm-info">
+                <i class="fa-solid fa-users"></i>
+                <div>
+                  <strong>Socios & Clientes</strong>
+                  <span>Inscripción, edición, carnets e historial</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-memberships" value="memberships" />
+              <div class="perm-info">
+                <i class="fa-solid fa-ticket"></i>
+                <div>
+                  <strong>Planes & Tarifas</strong>
+                  <span>Crear y configurar precios y membresías</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-pos" value="pos" />
+              <div class="perm-info">
+                <i class="fa-solid fa-cash-register"></i>
+                <div>
+                  <strong>Tienda POS & Stock</strong>
+                  <span>Cobros de suplementos y tickets térmicos</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-classes" value="classes" />
+              <div class="perm-info">
+                <i class="fa-solid fa-calendar-days"></i>
+                <div>
+                  <strong>Clases Grupales</strong>
+                  <span>Horarios, cupos y reservas de socios</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-routines" value="routines" />
+              <div class="perm-info">
+                <i class="fa-solid fa-dumbbell"></i>
+                <div>
+                  <strong>Rutinas & Medidas</strong>
+                  <span>Planes de entrenamiento y antropometría</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-finances" value="finances" />
+              <div class="perm-info">
+                <i class="fa-solid fa-wallet"></i>
+                <div>
+                  <strong>Caja & Finanzas</strong>
+                  <span>Arqueo de caja, egresos y reportes financieros</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-member-portal" value="member-portal" />
+              <div class="perm-info">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+                <div>
+                  <strong>Portal del Socio</strong>
+                  <span>Vista móvil y rutinas para el cliente</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-settings" value="settings" />
+              <div class="perm-info">
+                <i class="fa-solid fa-sliders"></i>
+                <div>
+                  <strong>Configuración</strong>
+                  <span>Ajustes de datos fiscales e IVA del gimnasio</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-users" value="users" />
+              <div class="perm-info">
+                <i class="fa-solid fa-user-shield"></i>
+                <div>
+                  <strong>Gestión de Empleados</strong>
+                  <span>Administración de usuarios y permisos RBAC</span>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-user-form')">Cancelar</button>
+        <button class="btn btn-primary" onclick="GymAppInstance.saveUser()">
+          <i class="fa-solid fa-floppy-disk"></i> Guardar Usuario
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Switch User & Quick Login -->
+  <div id="modal-switch-user" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--primary);"></i>
+          <span>Cambiar de Usuario / Iniciar Sesión</span>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Selecciona tu cuenta o ingresa con tu nombre de usuario y PIN personal:
+        </p>
+
+        <!-- Quick user selector cards -->
+        <div class="switch-users-grid" id="switch-users-list">
+          <!-- Dynamic quick user tiles -->
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; margin: 1.25rem 0;">
+          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">O ingresa manualmente</span>
+          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+        </div>
+
+        <form id="form-user-login" onsubmit="GymAppInstance.handleLoginSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Nombre de Usuario:</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="login-username" class="form-control" placeholder="admin / recepcion / coach" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">PIN o Contraseña:</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="login-pin" class="form-control" placeholder="****" required />
+            </div>
+          </div>
+
+          <div id="login-error-msg" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--secondary); border-radius: var(--radius-sm); color: #fca5a5; font-size: 0.85rem; margin-bottom: 1rem;">
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+            <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión en ForzaGym
+          </button>
+        </form>
       </div>
     </div>
   </div>

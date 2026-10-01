@@ -6,17 +6,85 @@
 class GymApp {
   constructor() {
     this.currentView = 'dashboard';
-    this.currentUserRole = 'admin'; // admin, receptionist, trainer, member
+    this.currentUser = null;
     this.posCart = [];
     this.init();
   }
 
   init() {
+    this.currentUser = window.GymDB.getCurrentUser();
     this.bindEvents();
     this.startLiveClock();
     this.updateOccupancy();
-    this.renderView('dashboard');
+    this.updateHeaderUserProfile();
+    this.renderUserNavPermissions();
+
+    const initialView = this.hasPermission('dashboard') ? 'dashboard' : this.getFirstPermittedView();
+    this.renderView(initialView);
     this.setupPOS();
+  }
+
+  // --- Role-Based Access Control (RBAC) & Permissions ---
+  hasPermission(module) {
+    if (!this.currentUser) this.currentUser = window.GymDB.getCurrentUser();
+    if (!this.currentUser) return false;
+    if (this.currentUser.role === 'admin') return true;
+    if (!this.currentUser.permissions || !Array.isArray(this.currentUser.permissions)) return false;
+    if (this.currentUser.permissions.includes('all')) return true;
+    return this.currentUser.permissions.includes(module);
+  }
+
+  getFirstPermittedView() {
+    const modules = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'users', 'member-portal', 'settings'];
+    for (const mod of modules) {
+      if (this.hasPermission(mod)) return mod;
+    }
+    return 'member-portal';
+  }
+
+  renderUserNavPermissions() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+      const perm = item.dataset.permission || item.dataset.view;
+      if (perm) {
+        item.style.display = this.hasPermission(perm) ? 'flex' : 'none';
+      }
+    });
+
+    // Dropdown links
+    const usersLink = document.getElementById('dropdown-link-users');
+    if (usersLink) {
+      usersLink.style.display = this.hasPermission('users') ? 'flex' : 'none';
+    }
+    const settingsLink = document.getElementById('dropdown-link-settings');
+    if (settingsLink) {
+      settingsLink.style.display = this.hasPermission('settings') ? 'flex' : 'none';
+    }
+  }
+
+  updateHeaderUserProfile() {
+    if (!this.currentUser) this.currentUser = window.GymDB.getCurrentUser();
+    const u = this.currentUser;
+    if (!u) return;
+
+    const avatarElem = document.getElementById('header-user-avatar');
+    const nameElem = document.getElementById('header-user-name');
+    const roleElem = document.getElementById('header-user-role');
+
+    if (avatarElem) avatarElem.textContent = u.avatar || 'US';
+    if (nameElem) nameElem.textContent = u.name || 'Usuario';
+    if (roleElem) {
+      roleElem.textContent = u.role === 'admin' ? 'ADMIN' : (u.roleTitle || 'STAFF').toUpperCase();
+    }
+
+    const dropAvatar = document.getElementById('dropdown-user-avatar');
+    const dropName = document.getElementById('dropdown-user-name');
+    const dropRole = document.getElementById('dropdown-user-role-title');
+    const dropUsername = document.getElementById('dropdown-user-username');
+
+    if (dropAvatar) dropAvatar.textContent = u.avatar || 'US';
+    if (dropName) dropName.textContent = u.name || 'Usuario';
+    if (dropRole) dropRole.textContent = u.roleTitle || (u.role === 'admin' ? 'Administrador General' : 'Empleado');
+    if (dropUsername) dropUsername.textContent = `@${u.username}`;
   }
 
   // --- Clock & Live Occupancy ---
@@ -52,6 +120,15 @@ class GymApp {
 
   // --- View Routing ---
   renderView(viewName) {
+    if (!this.hasPermission(viewName)) {
+      this.showToast(`Acceso restringido: No cuentas con permisos para acceder a "${viewName}".`, 'warning');
+      const fallback = this.getFirstPermittedView();
+      if (fallback && fallback !== viewName) {
+        this.renderView(fallback);
+      }
+      return;
+    }
+
     this.currentView = viewName;
 
     // Update nav item active states
@@ -72,6 +149,10 @@ class GymApp {
     // Close mobile menu if open
     const sidebar = document.querySelector('.sidebar');
     if (sidebar) sidebar.classList.remove('open');
+
+    // Close user dropdown if open
+    const dropdown = document.getElementById('user-dropdown-menu');
+    if (dropdown) dropdown.classList.remove('show');
 
     // Trigger View Renderers
     switch (viewName) {
@@ -98,6 +179,9 @@ class GymApp {
         break;
       case 'finances':
         this.renderFinances();
+        break;
+      case 'users':
+        this.renderUsers();
         break;
       case 'member-portal':
         this.renderMemberPortal();
@@ -1314,6 +1398,408 @@ class GymApp {
     this.showToast(muted ? "Sonidos silenciados" : "Sonidos activados", "info");
   }
 
+  // ==========================================================================
+  // STAFF & USER MANAGEMENT CONTROLLER (RBAC)
+  // ==========================================================================
+  renderUsers(searchQuery = '') {
+    const users = window.GymDB.getUsers();
+    const roleFilterElem = document.getElementById('users-role-filter');
+    const filterRole = roleFilterElem ? roleFilterElem.value : 'all';
+
+    // Update KPIs
+    const totalElem = document.getElementById('kpi-total-users');
+    const activeElem = document.getElementById('kpi-active-users');
+    const adminElem = document.getElementById('kpi-admin-users');
+    if (totalElem) totalElem.textContent = users.length;
+    if (activeElem) activeElem.textContent = users.filter(u => u.status === 'active').length;
+    if (adminElem) adminElem.textContent = users.filter(u => u.role === 'admin').length;
+
+    const tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+
+    const q = searchQuery.toLowerCase().trim();
+    const filtered = users.filter(u => {
+      const matchQuery = !q || 
+        (u.name && u.name.toLowerCase().includes(q)) ||
+        (u.username && u.username.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        (u.roleTitle && u.roleTitle.toLowerCase().includes(q));
+
+      const matchRole = filterRole === 'all' || u.role === filterRole;
+      return matchQuery && matchRole;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-dim);">
+            <i class="fa-solid fa-user-slash" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+            No se encontraron usuarios o empleados registrados con ese criterio.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    const moduleLabels = {
+      dashboard: "Dashboard",
+      access: "Acceso / Torniquete",
+      members: "Socios",
+      memberships: "Planes",
+      pos: "Tienda POS",
+      classes: "Clases",
+      routines: "Rutinas",
+      finances: "Caja Chica",
+      'member-portal': "Portal Socio",
+      settings: "Configuración",
+      users: "Gestión Personal"
+    };
+
+    tbody.innerHTML = filtered.map(u => {
+      const isCurrent = this.currentUser && this.currentUser.id === u.id;
+      const isAdmin = u.role === 'admin' || (u.permissions && u.permissions.includes('all'));
+
+      let permBadges = '';
+      if (isAdmin) {
+        permBadges = `<span class="badge-perm badge-admin"><i class="fa-solid fa-crown"></i> Acceso Total (Admin)</span>`;
+      } else if (u.permissions && u.permissions.length > 0) {
+        permBadges = u.permissions.map(p => `<span class="badge-perm"><i class="fa-solid fa-check"></i> ${moduleLabels[p] || p}</span>`).join('');
+      } else {
+        permBadges = `<span style="font-size: 0.75rem; color: var(--text-dim);">Sin funciones asignadas</span>`;
+      }
+
+      const statusBadge = u.status === 'active'
+        ? `<span class="status-pill active"><i class="fa-solid fa-circle"></i> Activo</span>`
+        : `<span class="status-pill expired"><i class="fa-solid fa-ban"></i> Inactivo</span>`;
+
+      return `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="user-avatar" style="width: 36px; height: 36px; font-size: 0.9rem;">${u.avatar || 'US'}</div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <strong style="color: var(--text-main); font-size: 0.9rem;">${u.name}</strong>
+                  ${isCurrent ? '<span style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.2); color: var(--accent); padding: 1px 6px; border-radius: 4px; font-weight: 700;">ACTUAL</span>' : ''}
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-dim);">${u.email || 'Sin correo'}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <strong style="font-size: 0.82rem; color: var(--text-main);">${u.roleTitle || u.role}</strong>
+            <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Rol: ${u.role}</div>
+          </td>
+          <td>
+            <code style="background: var(--bg-tertiary); padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--primary);">@${u.username}</code>
+          </td>
+          <td style="font-size: 0.82rem; color: var(--text-muted);">
+            ${u.phone ? `<div><i class="fa-solid fa-phone" style="font-size: 0.7rem; color: var(--accent);"></i> ${u.phone}</div>` : '<span style="color: var(--text-dim);">-</span>'}
+          </td>
+          <td style="max-width: 260px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 2px;">
+              ${permBadges}
+            </div>
+          </td>
+          <td>${statusBadge}</td>
+          <td>
+            <div class="action-buttons-group">
+              <button class="btn-table-action" onclick="GymAppInstance.openEditUserModal('${u.id}')" title="Editar Funciones y Datos">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button class="btn-table-action" onclick="GymAppInstance.toggleUserStatus('${u.id}')" title="${u.status === 'active' ? 'Desactivar Cuenta' : 'Habilitar Cuenta'}" style="color: ${u.status === 'active' ? 'var(--warning)' : 'var(--accent)'};">
+                <i class="fa-solid ${u.status === 'active' ? 'fa-user-slash' : 'fa-user-check'}"></i>
+              </button>
+              ${u.role !== 'admin' || users.filter(usr => usr.role === 'admin').length > 1 ? `
+                <button class="btn-table-action btn-delete" onclick="GymAppInstance.deleteUser('${u.id}')" title="Eliminar Usuario">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              ` : ''}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  openNewUserModal() {
+    document.getElementById('user-form-title').textContent = "Registrar Empleado / Usuario";
+    document.getElementById('user-edit-id').value = "";
+    document.getElementById('u-name').value = "";
+    document.getElementById('u-username').value = "";
+    document.getElementById('u-pin').value = "";
+    document.getElementById('u-role').value = "receptionist";
+    document.getElementById('u-role-title').value = "Recepcionista / Front Desk";
+    document.getElementById('u-status').value = "active";
+    document.getElementById('u-phone').value = "";
+    document.getElementById('u-email').value = "";
+
+    this.onRolePresetChanged('receptionist');
+    this.openModal('modal-user-form');
+  }
+
+  openEditUserModal(userId) {
+    const user = window.GymDB.getUserById(userId);
+    if (!user) return;
+
+    document.getElementById('user-form-title').textContent = `Editar Empleado: ${user.name}`;
+    document.getElementById('user-edit-id').value = user.id;
+    document.getElementById('u-name').value = user.name || "";
+    document.getElementById('u-username').value = user.username || "";
+    document.getElementById('u-pin').value = user.pin || "";
+    document.getElementById('u-role').value = user.role || "custom";
+    document.getElementById('u-role-title').value = user.roleTitle || "";
+    document.getElementById('u-status').value = user.status || "active";
+    document.getElementById('u-phone').value = user.phone || "";
+    document.getElementById('u-email').value = user.email || "";
+
+    // Set permission checkboxes
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+    const isAdmin = user.role === 'admin' || (user.permissions && user.permissions.includes('all'));
+    
+    allPerms.forEach(p => {
+      const chk = document.getElementById(`perm-${p}`);
+      if (chk) {
+        chk.checked = isAdmin || (user.permissions && user.permissions.includes(p));
+      }
+    });
+
+    this.openModal('modal-user-form');
+  }
+
+  onRolePresetChanged(role) {
+    const titleInput = document.getElementById('u-role-title');
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+
+    let defaultTitle = "";
+    let activePerms = [];
+
+    switch (role) {
+      case 'admin':
+        defaultTitle = "Administrador General";
+        activePerms = allPerms;
+        break;
+      case 'receptionist':
+        defaultTitle = "Recepcionista / Front Desk";
+        activePerms = ['access', 'members', 'pos', 'classes', 'finances'];
+        break;
+      case 'trainer':
+        defaultTitle = "Head Coach / Entrenador";
+        activePerms = ['routines', 'classes', 'members'];
+        break;
+      case 'cashier':
+        defaultTitle = "Cajero & Ventas POS";
+        activePerms = ['pos', 'finances'];
+        break;
+      case 'custom':
+        defaultTitle = "Personalizado";
+        activePerms = ['access', 'members'];
+        break;
+    }
+
+    if (titleInput && !document.getElementById('user-edit-id').value) {
+      titleInput.value = defaultTitle;
+    }
+
+    allPerms.forEach(p => {
+      const chk = document.getElementById(`perm-${p}`);
+      if (chk) chk.checked = activePerms.includes(p);
+    });
+  }
+
+  toggleAllPermissions(enable) {
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+    allPerms.forEach(p => {
+      const chk = document.getElementById(`perm-${p}`);
+      if (chk) chk.checked = enable;
+    });
+  }
+
+  saveUser() {
+    const editId = document.getElementById('user-edit-id').value;
+    const name = document.getElementById('u-name').value.trim();
+    const username = document.getElementById('u-username').value.trim().toLowerCase();
+    const pin = document.getElementById('u-pin').value.trim();
+    const role = document.getElementById('u-role').value;
+    const roleTitle = document.getElementById('u-role-title').value.trim();
+    const status = document.getElementById('u-status').value;
+    const phone = document.getElementById('u-phone').value.trim();
+    const email = document.getElementById('u-email').value.trim();
+
+    if (!name || !username || !pin) {
+      this.showToast("Por favor completa los campos obligatorios (*)", "warning");
+      return;
+    }
+
+    // Check duplicate username
+    const existing = window.GymDB.getUserByUsername(username);
+    if (existing && existing.id !== editId) {
+      this.showToast(`El nombre de usuario "${username}" ya está en uso. Elige otro.`, "error");
+      return;
+    }
+
+    // Gather checked permissions
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+    const permissions = [];
+    allPerms.forEach(p => {
+      const chk = document.getElementById(`perm-${p}`);
+      if (chk && chk.checked) permissions.push(p);
+    });
+
+    if (role === 'admin') {
+      if (!permissions.includes('all')) permissions.unshift('all');
+    }
+
+    if (permissions.length === 0) {
+      this.showToast("Debes asignar al menos una función / módulo al empleado.", "warning");
+      return;
+    }
+
+    const userData = {
+      name,
+      username,
+      pin,
+      role,
+      roleTitle: roleTitle || (role === 'admin' ? 'Administrador' : 'Empleado'),
+      status,
+      phone,
+      email,
+      permissions
+    };
+
+    if (editId) {
+      window.GymDB.updateUser(editId, userData);
+      this.showToast(`Usuario "${name}" actualizado con éxito.`, "success");
+    } else {
+      window.GymDB.addUser(userData);
+      this.showToast(`Empleado "${name}" registrado con éxito.`, "success");
+    }
+
+    this.closeModal('modal-user-form');
+    this.renderUsers();
+    this.updateHeaderUserProfile();
+    this.renderUserNavPermissions();
+  }
+
+  deleteUser(userId) {
+    const user = window.GymDB.getUserById(userId);
+    if (!user) return;
+
+    if (confirm(`¿Estás seguro de que deseas eliminar permanentemente al usuario "${user.name}" (@${user.username})?`)) {
+      const res = window.GymDB.deleteUser(userId);
+      if (res && res.success) {
+        this.showToast(`Usuario "${user.name}" eliminado del sistema.`, "info");
+        this.renderUsers();
+        this.updateHeaderUserProfile();
+        this.renderUserNavPermissions();
+      } else {
+        this.showToast(res ? res.message : "Error al eliminar usuario", "error");
+      }
+    }
+  }
+
+  toggleUserStatus(userId) {
+    const user = window.GymDB.getUserById(userId);
+    if (!user) return;
+
+    if (user.role === 'admin' && user.status === 'active' && window.GymDB.getUsers().filter(u => u.role === 'admin' && u.status === 'active').length <= 1) {
+      this.showToast("No puedes desactivar al único administrador activo del sistema.", "error");
+      return;
+    }
+
+    const newStatus = user.status === 'active' ? 'inactive' : 'active';
+    window.GymDB.updateUser(userId, { status: newStatus });
+    this.showToast(`Usuario ${user.name} ahora está ${newStatus === 'active' ? 'ACTIVO' : 'INACTIVO'}.`, "info");
+    this.renderUsers();
+  }
+
+  // --- Session & Switch User Controller ---
+  toggleUserDropdown(e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById('user-dropdown-menu');
+    if (dropdown) dropdown.classList.toggle('show');
+  }
+
+  openSwitchUserModal() {
+    const users = window.GymDB.getUsers().filter(u => u.status === 'active');
+    const container = document.getElementById('switch-users-list');
+    
+    if (container) {
+      container.innerHTML = users.map(u => {
+        const isCurrent = this.currentUser && this.currentUser.id === u.id;
+        return `
+          <div class="switch-user-card ${isCurrent ? 'active' : ''}" onclick="GymAppInstance.selectQuickUser('${u.username}')">
+            <div class="user-avatar">${u.avatar || 'US'}</div>
+            <div class="user-name">${u.name.split(' ')[0]}</div>
+            <div class="user-role">${u.roleTitle || u.role}</div>
+            ${isCurrent ? '<span style="font-size: 0.65rem; color: var(--accent); font-weight: 700; margin-top: 3px;">En uso</span>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Reset login form inputs
+    const uInput = document.getElementById('login-username');
+    const pInput = document.getElementById('login-pin');
+    const errMsg = document.getElementById('login-error-msg');
+    if (uInput) uInput.value = this.currentUser ? this.currentUser.username : "";
+    if (pInput) pInput.value = "";
+    if (errMsg) errMsg.style.display = 'none';
+
+    const dropdown = document.getElementById('user-dropdown-menu');
+    if (dropdown) dropdown.classList.remove('show');
+
+    this.openModal('modal-switch-user');
+  }
+
+  selectQuickUser(username) {
+    const uInput = document.getElementById('login-username');
+    const pInput = document.getElementById('login-pin');
+    if (uInput) uInput.value = username;
+    if (pInput) {
+      pInput.value = "";
+      pInput.focus();
+    }
+  }
+
+  handleLoginSubmit(e) {
+    if (e) e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const pin = document.getElementById('login-pin').value.trim();
+    const errMsg = document.getElementById('login-error-msg');
+
+    const res = window.GymDB.authenticateUser(username, pin);
+    if (!res.success) {
+      if (errMsg) {
+        errMsg.textContent = res.message;
+        errMsg.style.display = 'block';
+      }
+      GymAudio.playDeny();
+      return;
+    }
+
+    // Success
+    this.currentUser = res.user;
+    if (errMsg) errMsg.style.display = 'none';
+    this.closeModal('modal-switch-user');
+    
+    GymAudio.playAccess();
+    this.showToast(`¡Bienvenido(a), ${res.user.name}! Sesión iniciada como ${res.user.roleTitle || res.user.role}.`, "success");
+
+    this.updateHeaderUserProfile();
+    this.renderUserNavPermissions();
+
+    const targetView = this.hasPermission(this.currentView) ? this.currentView : this.getFirstPermittedView();
+    this.renderView(targetView);
+  }
+
+  logoutUser() {
+    const dropdown = document.getElementById('user-dropdown-menu');
+    if (dropdown) dropdown.classList.remove('show');
+    this.openSwitchUserModal();
+    this.showToast("Sesión cerrada. Selecciona un usuario o ingresa credenciales.", "info");
+  }
+
   // --- Global Event Bindings ---
   bindEvents() {
     // Navigation clicks
@@ -1322,6 +1808,15 @@ class GymApp {
         const view = btn.dataset.view;
         if (view) this.renderView(view);
       });
+    });
+
+    // Close user dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('user-profile-menu-container');
+      const dropdown = document.getElementById('user-dropdown-menu');
+      if (container && dropdown && !container.contains(e.target)) {
+        dropdown.classList.remove('show');
+      }
     });
 
     // Mobile sidebar toggle

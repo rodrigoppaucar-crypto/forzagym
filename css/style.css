@@ -449,18 +449,31 @@ body {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.35rem 0.6rem;
+  position: relative;
+}
+
+.user-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem 0.75rem 0.35rem 0.45rem;
   border-radius: var(--radius-full);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   cursor: pointer;
+  transition: var(--transition);
+}
+
+.user-profile-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-glow);
 }
 
 .user-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--secondary), var(--purple));
+  background: linear-gradient(135deg, var(--primary), var(--purple));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -485,6 +498,83 @@ body {
   color: var(--primary);
   text-transform: uppercase;
   font-weight: 700;
+}
+
+/* User Profile Dropdown Menu */
+.user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 0.5rem;
+  display: none;
+  flex-direction: column;
+  z-index: 1000;
+  backdrop-filter: var(--blur-glass);
+  animation: dropdownFade 0.2s ease;
+}
+
+.user-dropdown-menu.show {
+  display: flex;
+}
+
+@keyframes dropdownFade {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.user-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.65rem 0.75rem;
+}
+
+.user-dropdown-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0.35rem 0;
+}
+
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.user-dropdown-item i {
+  width: 18px;
+  color: var(--text-dim);
+  transition: var(--transition);
+}
+
+.user-dropdown-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--primary);
+}
+
+.user-dropdown-item:hover i {
+  color: var(--primary);
+}
+
+.user-dropdown-item.text-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--secondary);
+}
+
+.user-dropdown-item.text-danger:hover i {
+  color: var(--secondary);
 }
 
 /* App View Containers */
@@ -1320,6 +1410,141 @@ body {
 @keyframes slideInRight {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+/* ==========================================================================
+   PERMISSIONS & RBAC SYSTEM STYLES
+   ========================================================================== */
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.permission-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.permission-item:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary-glow);
+}
+
+.permission-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.permission-item .perm-info {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.permission-item .perm-info i {
+  color: var(--primary);
+  font-size: 0.95rem;
+  margin-top: 2px;
+}
+
+.permission-item .perm-info strong {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.permission-item .perm-info span {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.badge-perm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(0, 242, 254, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  margin: 2px;
+}
+
+.badge-perm.badge-admin {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--purple);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Switch User Modal Grid */
+.switch-users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.switch-user-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0.85rem 0.5rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.switch-user-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.switch-user-card.active {
+  border-color: var(--accent);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.switch-user-card .user-avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.switch-user-card .user-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.switch-user-card .user-role {
+  font-size: 0.7rem;
+  color: var(--text-dim);
 }
 
 /* Responsive Media Queries */
