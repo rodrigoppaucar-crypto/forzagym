@@ -9,6 +9,9 @@ class GymApp {
     this.currentUser = null;
     this.posCart = [];
     this.accessCameraAutoStartRequested = false;
+    this.barcodeCamera = null;
+    this.barcodeCameraStarting = false;
+    this.barcodeCameraMode = null;
     this.init();
   }
 
@@ -149,6 +152,7 @@ class GymApp {
       window.GymScanner.stopCamera();
       this.accessCameraAutoStartRequested = false;
     }
+    if (this.currentView === 'pos' && viewName !== 'pos') this.stopBarcodeCamera();
 
     this.currentView = viewName;
 
@@ -1017,6 +1021,88 @@ class GymApp {
     }
     document.getElementById('product-name').focus();
     this.showToast('Código leído. Completa los datos del producto.', 'success');
+  }
+
+  async toggleBarcodeCamera(mode = 'product') {
+    if (this.barcodeCamera || this.barcodeCameraStarting) {
+      await this.stopBarcodeCamera();
+      return;
+    }
+    if (typeof Html5Qrcode === 'undefined' || typeof Html5QrcodeSupportedFormats === 'undefined') {
+      this.showToast('No se cargó el lector de cámara. Actualiza la página e inténtalo de nuevo.', 'error');
+      return;
+    }
+    const containerId = mode === 'pos' ? 'pos-barcode-camera' : 'product-barcode-camera';
+    const wrapper = document.getElementById(mode === 'pos' ? 'pos-barcode-camera-wrap' : 'product-barcode-camera-wrap');
+    const container = document.getElementById(containerId);
+    if (!container || !wrapper) return;
+
+    const supportedFormats = Html5QrcodeSupportedFormats;
+    const formatNames = ['EAN_13', 'EAN_8', 'UPC_A', 'UPC_E', 'CODE_128', 'CODE_39', 'ITF', 'CODABAR'];
+    const formatsToSupport = formatNames.map(name => supportedFormats[name]).filter(format => format !== undefined);
+    if (!formatsToSupport.length) {
+      this.showToast('El lector cargado no admite formatos de código de barras.', 'error');
+      return;
+    }
+
+    this.barcodeCameraStarting = true;
+    this.barcodeCameraMode = mode;
+    wrapper.hidden = false;
+    try {
+      this.barcodeCamera = new Html5Qrcode(containerId, { formatsToSupport });
+      const cameras = await Html5Qrcode.getCameras();
+      const rearCamera = (cameras || []).find(camera => /back|rear|trasera|environment/i.test(camera.label || ''));
+      const camera = rearCamera?.id || cameras?.[0]?.id || { facingMode: 'environment' };
+      await this.barcodeCamera.start(camera, { fps: 12, aspectRatio: 1.6 }, decodedText => {
+        const barcode = String(decodedText || '').trim();
+        if (!barcode || this.barcodeCameraMode !== mode) return;
+        if (window.GymAudio) window.GymAudio.playBeep();
+        this.stopBarcodeCamera();
+        if (mode === 'pos') {
+          const search = document.getElementById('pos-product-search');
+          if (search) search.value = barcode;
+          this.scanPOSBarcode(barcode);
+          if (search) search.focus();
+        } else {
+          document.getElementById('product-barcode').value = barcode;
+          this.handleProductBarcodeEnter();
+        }
+      }, () => {});
+    } catch (error) {
+      console.error('No se pudo iniciar la cámara para códigos de barras:', error);
+      this.barcodeCamera = null;
+      this.barcodeCameraMode = null;
+      wrapper.hidden = true;
+      this.showToast(error?.name === 'NotAllowedError'
+        ? 'Permite el acceso a la cámara en el navegador para escanear.'
+        : 'No se pudo iniciar la cámara. Comprueba el permiso y que no esté en uso.', 'error');
+    } finally {
+      this.barcodeCameraStarting = false;
+    }
+  }
+
+  async stopBarcodeCamera() {
+    const scanner = this.barcodeCamera;
+    const mode = this.barcodeCameraMode;
+    this.barcodeCamera = null;
+    this.barcodeCameraMode = null;
+    if (scanner) {
+      try {
+        await scanner.stop();
+      } catch (error) {
+        console.warn('No se pudo detener la cámara de código de barras:', error);
+      }
+      try {
+        scanner.clear();
+      } catch (error) {
+        console.warn('No se pudo limpiar el lector de código de barras:', error);
+      }
+    }
+    ['product-barcode-camera-wrap', 'pos-barcode-camera-wrap'].forEach(id => {
+      const wrapper = document.getElementById(id);
+      if (wrapper) wrapper.hidden = true;
+    });
+    if (mode === 'product') document.getElementById('product-barcode')?.focus();
   }
 
   saveProduct() {
@@ -1916,6 +2002,7 @@ class GymApp {
     if (modal) {
       modal.classList.remove('show');
     }
+    if (modalId === 'modal-product-form' && this.barcodeCameraMode === 'product') this.stopBarcodeCamera();
   }
 
   toggleTheme() {

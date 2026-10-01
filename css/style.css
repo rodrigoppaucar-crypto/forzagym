@@ -1367,6 +1367,50 @@ body {
   line-height: 1.4;
 }
 
+.pos-search-tools {
+  width: min(100%, 290px);
+  display: flex;
+  gap: 0.4rem;
+}
+
+.pos-search-tools .btn {
+  flex: 0 0 42px;
+}
+
+.barcode-camera-wrap {
+  width: 100%;
+  margin-top: 0.65rem;
+  padding: 0.55rem;
+  background: #0b1019;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.barcode-camera-viewport {
+  width: 100%;
+  min-height: 150px;
+  max-height: 230px;
+  overflow: hidden;
+  background: #05070a;
+}
+
+.barcode-camera-viewport video {
+  width: 100% !important;
+  max-height: 230px;
+  object-fit: cover;
+}
+
+.barcode-camera-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.55rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
 .inventory-toolbar .form-control {
   flex: 1 1 240px;
 }
