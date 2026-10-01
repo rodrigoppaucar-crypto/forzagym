@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=finance-admin" />
+  <link rel="stylesheet" href="css/style.css?v=pos-stock-v1" />
 </head>
 <body>
 
@@ -527,6 +527,17 @@
             <h2>Punto de Venta (POS) & Inventario de Tienda</h2>
             <p>Venta rápida de suplementos, bebidas energéticas, indumentaria y accesorios</p>
           </div>
+          <div class="view-actions">
+            <button class="btn btn-outline" onclick="GymAppInstance.openInventoryModal()">
+              <i class="fa-solid fa-boxes-stacked"></i> Administrar inventario
+            </button>
+            <button class="btn btn-outline" onclick="GymExporter.exportToCSV('inventario_productos', GymDB.getProducts())">
+              <i class="fa-solid fa-file-csv"></i> Exportar inventario
+            </button>
+            <button class="btn btn-primary" onclick="GymAppInstance.openProductModal()">
+              <i class="fa-solid fa-plus"></i> Nuevo producto
+            </button>
+          </div>
         </div>
 
         <div class="pos-layout">
@@ -534,16 +545,10 @@
           <div class="card">
             <!-- Category Tabs & Search -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap;">
-              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('all')">Todos</button>
-                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('Suplementos')">Suplementos</button>
-                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('Bebidas')">Bebidas</button>
-                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('Snacks')">Snacks</button>
-                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('Accesorios')">Accesorios</button>
-              </div>
+              <div id="pos-category-filters" style="display: flex; gap: 0.4rem; flex-wrap: wrap;"></div>
 
               <div style="width: 220px;">
-                <input type="text" class="form-control" placeholder="Buscar producto..." oninput="GymAppInstance.renderPOS('all', this.value)" />
+                <input type="search" id="pos-product-search" class="form-control" placeholder="Nombre o código de barras..." oninput="GymAppInstance.renderPOS('all', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();GymAppInstance.scanPOSBarcode(this.value)}" />
               </div>
             </div>
 
@@ -605,6 +610,126 @@
           </div>
         </div>
       </section>
+
+  <div id="modal-product-form" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-box-open"></i><span id="product-form-title">Nuevo producto</span></div>
+        <button class="modal-close" onclick="GymAppInstance.closeModal('modal-product-form')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="product-edit-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre del producto (*):</label>
+            <input type="text" id="product-name" class="form-control" maxlength="100" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Categoría (*):</label>
+            <input type="text" id="product-category" class="form-control" list="product-category-options" maxlength="40" required />
+            <datalist id="product-category-options">
+              <option value="Suplementos"></option><option value="Bebidas"></option>
+              <option value="Snacks"></option><option value="Accesorios"></option><option value="Otros"></option>
+            </datalist>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Costo unitario ($):</label>
+            <input type="number" id="product-cost" class="form-control" min="0" step="0.01" value="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Precio de venta ($) (*):</label>
+            <input type="number" id="product-sale-price" class="form-control" min="0" step="0.01" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Existencias:</label>
+            <input type="number" id="product-stock" class="form-control" min="0" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Avisar cuando queden:</label>
+            <input type="number" id="product-min-stock" class="form-control" min="0" step="1" value="3" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Código de barras / SKU:</label>
+            <input type="text" id="product-barcode" class="form-control" maxlength="80" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Icono Font Awesome:</label>
+            <input type="text" id="product-icon" class="form-control" placeholder="fa-solid fa-box" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-product-form')">Cancelar</button>
+        <button class="btn btn-primary" onclick="GymAppInstance.saveProduct()"><i class="fa-solid fa-floppy-disk"></i> Guardar producto</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-inventory" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-boxes-stacked"></i><span>Administrar inventario</span></div>
+        <button class="modal-close" onclick="GymAppInstance.closeModal('modal-inventory')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="inventory-toolbar">
+          <input type="search" id="inventory-search" class="form-control" placeholder="Buscar nombre, categoría o código..." oninput="GymAppInstance.renderInventory()" />
+          <label class="inventory-toggle"><input type="checkbox" id="inventory-show-retired" onchange="GymAppInstance.renderInventory()" /> Mostrar retirados</label>
+        </div>
+        <div class="inventory-table-wrap">
+          <table class="data-table inventory-table">
+            <thead><tr><th>Producto</th><th>Categoría / Código</th><th>Costo / Venta</th><th>Stock</th><th>Acciones</th></tr></thead>
+            <tbody id="inventory-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-inventory')">Cerrar</button>
+        <button class="btn btn-primary" onclick="GymAppInstance.openProductModal()"><i class="fa-solid fa-plus"></i> Nuevo producto</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-stock-adjustment" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>Ajustar existencias</span></div>
+        <button class="modal-close" onclick="GymAppInstance.closeModal('modal-stock-adjustment')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="stock-product-id" />
+        <p id="stock-product-label" class="stock-product-label"></p>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Operación:</label>
+            <select id="stock-adjustment-mode" class="form-select">
+              <option value="add">Recibir / agregar</option>
+              <option value="remove">Merma / retirar</option>
+              <option value="set">Fijar stock exacto</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unidades (*):</label>
+            <input type="number" id="stock-adjustment-quantity" class="form-control" min="0" step="1" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motivo (*):</label>
+          <input type="text" id="stock-adjustment-reason" class="form-control" maxlength="120" placeholder="Compra, conteo, merma..." required />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-stock-adjustment')">Cancelar</button>
+        <button class="btn btn-primary" onclick="GymAppInstance.saveStockAdjustment()"><i class="fa-solid fa-floppy-disk"></i> Aplicar ajuste</button>
+      </div>
+    </div>
+  </div>
 
       <!-- ==========================================================================
            VIEW 6: CLASSES & CALENDAR
@@ -1811,13 +1936,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 
   <!-- Core Scripts -->
-  <script src="js/firebase-sync.js"></script>
-  <script src="js/db.js"></script>
+  <script src="js/firebase-sync.js?v=pos-stock-v1"></script>
+  <script src="js/db.js?v=pos-stock-v1"></script>
   <script src="js/audio.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="js/qr.js?v=finance-admin"></script>
-  <script src="js/pdf-ticket.js?v=finance-admin"></script>
+  <script src="js/qr.js?v=pos-stock-v1"></script>
+  <script src="js/pdf-ticket.js?v=pos-stock-v1"></script>
   <script src="js/charts.js"></script>
-  <script src="js/app.js?v=finance-admin"></script>
+  <script src="js/app.js?v=pos-stock-v1"></script>
 </body>
 </html>

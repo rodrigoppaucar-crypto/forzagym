@@ -1318,6 +1318,87 @@ body {
   color: var(--text-dim);
 }
 
+.product-stock-low {
+  color: #fbbf24 !important;
+}
+
+.pos-product-unavailable {
+  opacity: 0.62;
+}
+
+.pos-product-unavailable .product-thumb {
+  color: var(--text-dim);
+}
+
+.pos-empty-state {
+  grid-column: 1 / -1;
+  padding: 2rem 1rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.inventory-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.inventory-toolbar .form-control {
+  flex: 1 1 240px;
+}
+
+.inventory-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.inventory-table-wrap {
+  max-height: min(60vh, 560px);
+  overflow: auto;
+}
+
+.inventory-table {
+  min-width: 760px;
+}
+
+.inventory-table td small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+}
+
+.inventory-actions {
+  white-space: nowrap;
+}
+
+.inventory-actions .btn {
+  margin: 0 0.08rem;
+}
+
+.inventory-delete {
+  color: var(--secondary);
+}
+
+.inventory-retired {
+  display: inline-block;
+  margin-left: 0.4rem;
+  color: var(--secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.stock-product-label {
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
 .product-price-row {
   display: flex;
   justify-content: space-between;

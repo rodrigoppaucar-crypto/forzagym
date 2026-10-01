@@ -889,13 +889,17 @@ class GymApp {
   // --- Point of Sale (POS) Module ---
   setupPOS() {
     this.posCart = [];
+    this.posFilterCategory = 'all';
+    this.posSearchQuery = '';
   }
 
   renderPOS(filterCategory = 'all', searchQuery = '') {
     const grid = document.getElementById('pos-products-list');
     if (!grid) return;
+    this.posFilterCategory = filterCategory;
+    this.posSearchQuery = searchQuery;
 
-    let products = window.GymDB.getProducts();
+    let products = window.GymDB.getProducts().filter(product => product.active !== false);
 
     if (filterCategory !== 'all') {
       products = products.filter(p => p.category === filterCategory);
@@ -903,33 +907,233 @@ class GymApp {
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      products = products.filter(p => p.name.toLowerCase().includes(q) || p.barcode.includes(q));
+      products = products.filter(p => String(p.name || '').toLowerCase().includes(q) || String(p.category || '').toLowerCase().includes(q) || String(p.barcode || '').toLowerCase().includes(q));
     }
 
-    grid.innerHTML = products.map(p => `
-      <div class="pos-product-card" onclick="GymAppInstance.addToCart('${p.id}')">
-        <div class="product-thumb">
-          <i class="${p.icon || 'fa-solid fa-dumbbell'}"></i>
-        </div>
+    const categoryFilters = document.getElementById('pos-category-filters');
+    if (categoryFilters) {
+      const categories = [...new Set(window.GymDB.getProducts()
+        .filter(product => product.active !== false)
+        .map(product => String(product.category || '').trim())
+        .filter(Boolean))].sort((a, b) => a.localeCompare(b));
+      categoryFilters.innerHTML = ['all', ...categories].map(category => {
+        const label = category === 'all' ? 'Todos' : category;
+        const categoryArg = encodeURIComponent(category).replace(/'/g, '%27');
+        return `<button type="button" class="btn ${filterCategory === category ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="GymAppInstance.renderPOS(decodeURIComponent('${categoryArg}'), document.getElementById('pos-product-search').value)">${this.escapePosHtml(label)}</button>`;
+      }).join('');
+    }
+
+    grid.innerHTML = products.length ? products.map(p => {
+      const productId = this.escapePosHtml(p.id);
+      const lowStock = Number(p.stock) <= Number(p.minStock || 0);
+      return `
+      <div class="pos-product-card ${Number(p.stock) <= 0 ? 'pos-product-unavailable' : ''}" onclick="GymAppInstance.addToCart('${productId}')">
+        <div class="product-thumb"><i class="${this.escapePosHtml(p.icon || 'fa-solid fa-dumbbell')}"></i></div>
         <div class="product-info">
-          <h5>${p.name}</h5>
-          <p>Stock: <strong>${p.stock}</strong> un.</p>
+          <h5>${this.escapePosHtml(p.name)}</h5>
+          <p>${this.escapePosHtml(p.category)}${p.barcode ? ` · ${this.escapePosHtml(p.barcode)}` : ''}</p>
+          <p class="product-stock ${lowStock ? 'product-stock-low' : ''}">Stock: <strong>${Number(p.stock) || 0}</strong> un.${lowStock ? ' · Reponer' : ''}</p>
         </div>
         <div class="product-price-row">
-          <span class="product-price">$${p.salePrice.toFixed(2)}</span>
-          <button class="btn btn-primary btn-sm btn-icon" style="border-radius: 50%;">
+          <span class="product-price">$${(Number(p.salePrice) || 0).toFixed(2)}</span>
+          <button type="button" class="btn btn-primary btn-sm btn-icon" aria-label="Agregar al carrito" ${p.stock <= 0 ? 'disabled' : ''}>
             <i class="fa-solid fa-plus"></i>
           </button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('') : '<div class="pos-empty-state">No hay productos disponibles con estos filtros.</div>';
 
     this.renderCart();
   }
 
-  addToCart(productId) {
+  escapePosHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+  }
+
+  openProductModal(productId = '') {
+    const product = productId ? window.GymDB.getProductById(productId) : null;
+    document.getElementById('product-form-title').textContent = product ? 'Editar producto' : 'Nuevo producto';
+    document.getElementById('product-edit-id').value = product?.id || '';
+    document.getElementById('product-name').value = product?.name || '';
+    document.getElementById('product-category').value = product?.category || 'Otros';
+    document.getElementById('product-cost').value = product?.costPrice ?? 0;
+    document.getElementById('product-sale-price').value = product?.salePrice ?? '';
+    document.getElementById('product-stock').value = product?.stock ?? 0;
+    document.getElementById('product-stock').readOnly = Boolean(product);
+    document.getElementById('product-min-stock').value = product?.minStock ?? 3;
+    document.getElementById('product-barcode').value = product?.barcode || '';
+    document.getElementById('product-icon').value = product?.icon || '';
+    document.getElementById('modal-product-form').classList.add('show');
+  }
+
+  saveProduct() {
+    const productId = document.getElementById('product-edit-id').value;
+    const data = {
+      name: document.getElementById('product-name').value.trim(),
+      category: document.getElementById('product-category').value.trim(),
+      costPrice: Number(document.getElementById('product-cost').value),
+      salePrice: Number(document.getElementById('product-sale-price').value),
+      stock: Number(document.getElementById('product-stock').value),
+      minStock: Number(document.getElementById('product-min-stock').value),
+      barcode: document.getElementById('product-barcode').value.trim(),
+      icon: document.getElementById('product-icon').value.trim() || 'fa-solid fa-box'
+    };
+    if (!data.name || !data.category || !Number.isFinite(data.costPrice) || data.costPrice < 0 ||
+        !Number.isFinite(data.salePrice) || data.salePrice < 0 || !Number.isInteger(data.stock) || data.stock < 0 ||
+        !Number.isInteger(data.minStock) || data.minStock < 0) {
+      this.showToast('Revisa nombre, categoría, precios y cantidades.', 'warning');
+      return;
+    }
+    const saved = productId ? window.GymDB.updateProduct(productId, data) : window.GymDB.addProduct(data);
+    if (!saved) {
+      this.showToast('No se guardó. Verifica que el código de barras no esté duplicado.', 'warning');
+      return;
+    }
+    if (productId) {
+      this.posCart.forEach(item => {
+        if (item.productId === productId) {
+          item.name = saved.name;
+          item.price = saved.salePrice;
+          item.total = item.qty * item.price;
+        }
+      });
+    }
+    this.closeModal('modal-product-form');
+    this.renderPOS(this.posFilterCategory || 'all', this.posSearchQuery || '');
+    this.renderInventory();
+    this.showToast(productId ? 'Producto actualizado.' : 'Producto agregado al inventario.', 'success');
+  }
+
+  openInventoryModal() {
+    document.getElementById('inventory-search').value = '';
+    document.getElementById('inventory-show-retired').checked = false;
+    this.renderInventory();
+    document.getElementById('modal-inventory').classList.add('show');
+  }
+
+  renderInventory() {
+    const table = document.getElementById('inventory-table-body');
+    if (!table) return;
+    const query = (document.getElementById('inventory-search')?.value || '').trim().toLowerCase();
+    const includeRetired = Boolean(document.getElementById('inventory-show-retired')?.checked);
+    const products = window.GymDB.getProducts().filter(product => {
+      if (!includeRetired && product.active === false) return false;
+      return [product.name, product.category, product.barcode].some(value => String(value || '').toLowerCase().includes(query));
+    });
+    table.innerHTML = products.length ? products.map(product => {
+      const id = this.escapePosHtml(product.id);
+      const retired = product.active === false;
+      const lowStock = Number(product.stock) <= Number(product.minStock || 0);
+      const sold = (window.GymDB.data.sales || []).some(sale => (sale.items || []).some(item => item.productId === product.id));
+      return `<tr>
+        <td><strong>${this.escapePosHtml(product.name)}</strong>${retired ? '<span class="inventory-retired">Retirado</span>' : ''}</td>
+        <td>${this.escapePosHtml(product.category)}<small>${this.escapePosHtml(product.barcode || 'Sin código')}</small></td>
+        <td>$${(Number(product.costPrice) || 0).toFixed(2)} / $${(Number(product.salePrice) || 0).toFixed(2)}</td>
+        <td><strong class="${lowStock ? 'product-stock-low' : ''}">${Number(product.stock) || 0}</strong><small>Mín. ${Number(product.minStock) || 0}</small></td>
+        <td class="inventory-actions">
+          <button class="btn btn-outline btn-sm btn-icon" title="Editar" onclick="GymAppInstance.openProductModal('${id}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn btn-outline btn-sm btn-icon" title="Ajustar stock" onclick="GymAppInstance.openStockAdjustment('${id}')"><i class="fa-solid fa-boxes-stacked"></i></button>
+          <button class="btn btn-outline btn-sm btn-icon" title="Historial de stock" onclick="GymAppInstance.showProductMovements('${id}')"><i class="fa-solid fa-clock-rotate-left"></i></button>
+          ${retired ? `<button class="btn btn-outline btn-sm btn-icon" title="Reactivar" onclick="GymAppInstance.toggleProductActive('${id}', true)"><i class="fa-solid fa-rotate-left"></i></button>` : `<button class="btn btn-outline btn-sm btn-icon" title="Retirar del POS" onclick="GymAppInstance.toggleProductActive('${id}', false)"><i class="fa-solid fa-box-archive"></i></button>`}
+          ${sold ? '' : `<button class="btn btn-outline btn-sm btn-icon inventory-delete" title="Borrar producto" onclick="GymAppInstance.deleteProduct('${id}')"><i class="fa-solid fa-trash"></i></button>`}
+        </td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" class="pos-empty-state">No hay productos que coincidan.</td></tr>';
+  }
+
+  openStockAdjustment(productId) {
     const product = window.GymDB.getProductById(productId);
     if (!product) return;
+    document.getElementById('stock-product-id').value = productId;
+    document.getElementById('stock-product-label').textContent = `${product.name} · Stock actual: ${product.stock}`;
+    document.getElementById('stock-adjustment-mode').value = 'add';
+    document.getElementById('stock-adjustment-quantity').value = '';
+    document.getElementById('stock-adjustment-reason').value = '';
+    document.getElementById('modal-stock-adjustment').classList.add('show');
+  }
+
+  saveStockAdjustment() {
+    const productId = document.getElementById('stock-product-id').value;
+    const mode = document.getElementById('stock-adjustment-mode').value;
+    const quantity = Number(document.getElementById('stock-adjustment-quantity').value);
+    const reason = document.getElementById('stock-adjustment-reason').value.trim();
+    if (!Number.isInteger(quantity) || quantity < 0 || !reason) {
+      this.showToast('Indica unidades enteras y el motivo del ajuste.', 'warning');
+      return;
+    }
+    const result = mode === 'set'
+      ? window.GymDB.setProductStock(productId, quantity, reason)
+      : window.GymDB.adjustProductStock(productId, mode === 'remove' ? -quantity : quantity, reason);
+    if (!result) {
+      this.showToast('No se pudo aplicar el ajuste; revisa que el stock no quede negativo.', 'warning');
+      return;
+    }
+    this.closeModal('modal-stock-adjustment');
+    this.renderInventory();
+    this.renderPOS(this.posFilterCategory || 'all', this.posSearchQuery || '');
+    this.showToast('Existencias ajustadas y guardadas.', 'success');
+  }
+
+  toggleProductActive(productId, active) {
+    const product = window.GymDB.getProductById(productId);
+    if (!product) return;
+    if (!active && !confirm(`¿Retirar "${product.name}" del catálogo POS? Se conservarán las ventas y podrás reactivarlo.`)) return;
+    if (!window.GymDB.setProductActive(productId, active)) return;
+    if (!active) this.posCart = this.posCart.filter(item => item.productId !== productId);
+    this.renderInventory();
+    this.renderPOS(this.posFilterCategory || 'all', this.posSearchQuery || '');
+    this.showToast(active ? 'Producto reactivado.' : 'Producto retirado del POS; se conserva su historial.', 'success');
+  }
+
+  deleteProduct(productId) {
+    const product = window.GymDB.getProductById(productId);
+    if (!product || !confirm(`¿Eliminar definitivamente "${product.name}"? Solo es posible si no aparece en ventas históricas.`)) return;
+    if (!window.GymDB.deleteProduct(productId)) {
+      this.showToast('Este producto tiene ventas asociadas. Retíralo del POS para conservar el historial.', 'warning');
+      return;
+    }
+    this.posCart = this.posCart.filter(item => item.productId !== productId);
+    this.renderInventory();
+    this.renderPOS(this.posFilterCategory || 'all', this.posSearchQuery || '');
+    this.showToast('Producto eliminado.', 'success');
+  }
+
+  showProductMovements(productId) {
+    const product = window.GymDB.getProductById(productId);
+    const movements = (window.GymDB.data.inventoryMovements || []).filter(item => item.productId === productId).slice(0, 20);
+    if (!movements.length) {
+      alert(`No hay movimientos registrados para ${product?.name || productId}.`);
+      return;
+    }
+    const lines = movements.map(item => {
+      const sign = item.delta > 0 ? '+' : '';
+      return `${new Date(item.date).toLocaleString()} | ${sign}${item.delta} | Stock ${item.stockAfter} | ${item.reason}${item.reference ? ` (${item.reference})` : ''}`;
+    });
+    alert(`${product?.name || productId}\n\n${lines.join('\n')}`);
+  }
+
+  scanPOSBarcode(rawBarcode) {
+    const barcode = String(rawBarcode || '').trim();
+    const search = document.getElementById('pos-product-search');
+    if (!barcode) return;
+    const product = window.GymDB.getProducts().find(item => item.active !== false && String(item.barcode || '').trim().toLowerCase() === barcode.toLowerCase());
+    if (!product) {
+      this.showToast(`No se encontró el código ${barcode}.`, 'warning');
+      if (search) search.select();
+      return;
+    }
+    if (search) search.value = '';
+    this.addToCart(product.id);
+    this.renderPOS('all', '');
+    if (search) search.focus();
+  }
+
+  addToCart(productId) {
+    const product = window.GymDB.getProductById(productId);
+    if (!product || product.active === false) return;
 
     if (product.stock <= 0) {
       this.showToast("Producto sin stock disponible", "error");
@@ -943,6 +1147,7 @@ class GymApp {
         return;
       }
       existing.qty += 1;
+      existing.price = product.salePrice;
       existing.total = existing.qty * existing.price;
     } else {
       this.posCart.push({
@@ -963,6 +1168,12 @@ class GymApp {
     if (!item) return;
 
     const product = window.GymDB.getProductById(productId);
+    if (!product || product.active === false) {
+      this.posCart = this.posCart.filter(cartItem => cartItem.productId !== productId);
+      this.renderCart();
+      this.showToast('Producto retirado del catálogo y eliminado del carrito.', 'warning');
+      return;
+    }
     item.qty += delta;
 
     if (item.qty <= 0) {
@@ -973,6 +1184,8 @@ class GymApp {
     }
 
     if (item.qty > 0) {
+      item.name = product.name;
+      item.price = product.salePrice;
       item.total = item.qty * item.price;
     }
 
@@ -1043,6 +1256,18 @@ class GymApp {
       return;
     }
 
+    for (const item of this.posCart) {
+      const product = window.GymDB.getProductById(item.productId);
+      if (!product || product.active === false || product.stock < item.qty) {
+        this.showToast(`Stock insuficiente o producto retirado: ${item.name}. Revisa el carrito.`, "error");
+        this.renderPOS(this.posFilterCategory || 'all', this.posSearchQuery || '');
+        return;
+      }
+      item.name = product.name;
+      item.price = Number(product.salePrice) || 0;
+      item.total = item.qty * item.price;
+    }
+
     const customerInput = document.getElementById('pos-customer-input');
     const paymentMethod = document.getElementById('pos-payment-method').value;
     const customerName = customerInput ? customerInput.value.trim() : 'Consumidor Final';
@@ -1062,6 +1287,12 @@ class GymApp {
       paymentMethod: paymentMethod
     });
 
+    if (!sale) {
+      this.showToast("No se registró la venta porque cambió el inventario. Actualiza el carrito e inténtalo nuevamente.", "error");
+      this.renderPOS(this.posFilterCategory || 'all', this.posSearchQuery || '');
+      return;
+    }
+
     GymAudio.playCash();
     this.showToast(`¡Venta realizada con éxito por $${rawTotal.toFixed(2)}!`, "success");
 
@@ -1069,7 +1300,7 @@ class GymApp {
     GymExporter.printReceipt(sale);
 
     this.clearCart();
-    this.renderPOS();
+    this.renderPOS(this.posFilterCategory || 'all', this.posSearchQuery || '');
   }
 
   // --- Classes & Calendar ---

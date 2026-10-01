@@ -805,23 +805,125 @@ class GymDatabase {
   }
 
   addProduct(prod) {
-    const newId = `PROD-${Date.now().toString().slice(-4)}`;
-    const newProd = { id: newId, ...prod };
+    if (prod.barcode && this.getProducts().some(product => product.barcode === prod.barcode)) return false;
+    const nextNumber = this.getProducts().reduce((max, product) => {
+      const match = String(product.id).match(/^PROD-(\d+)$/);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0) + 1;
+    const newProd = {
+      ...prod,
+      id: `PROD-${nextNumber}`,
+      active: true,
+      stock: Math.max(0, Math.trunc(Number(prod.stock) || 0)),
+      minStock: Math.max(0, Math.trunc(Number(prod.minStock) || 0)),
+      costPrice: Number(prod.costPrice) || 0,
+      salePrice: Number(prod.salePrice) || 0
+    };
     this.data.products.push(newProd);
+    if (newProd.stock > 0) this.recordInventoryMovement(newProd, newProd.stock, 'Stock inicial');
     this.save();
     return newProd;
   }
 
-  updateProductStock(productId, qtySold) {
-    const prod = this.getProductById(productId);
-    if (prod) {
-      prod.stock = Math.max(0, prod.stock - qtySold);
-      this.save();
+  updateProduct(productId, updates) {
+    const product = this.getProductById(productId);
+    if (!product) return false;
+    const barcode = String(updates.barcode || '').trim();
+    if (barcode && this.getProducts().some(item => item.id !== product.id && item.barcode === barcode)) return false;
+    Object.assign(product, updates, {
+      barcode,
+      stock: Math.max(0, Math.trunc(Number(updates.stock) || 0)),
+      minStock: Math.max(0, Math.trunc(Number(updates.minStock) || 0)),
+      costPrice: Number(updates.costPrice) || 0,
+      salePrice: Number(updates.salePrice) || 0
+    });
+    this.save();
+    return product;
+  }
+
+  setProductActive(productId, active) {
+    const product = this.getProductById(productId);
+    if (!product) return false;
+    product.active = Boolean(active);
+    this.save();
+    return product;
+  }
+
+  deleteProduct(productId) {
+    const productIndex = this.getProducts().findIndex(item => item.id === productId);
+    if (productIndex < 0) return false;
+    const referencedBySale = (this.data.sales || []).some(sale =>
+      (sale.items || []).some(item => item.productId === productId)
+    );
+    if (referencedBySale) return false;
+    const [product] = this.data.products.splice(productIndex, 1);
+    if (Array.isArray(this.data.inventoryMovements)) {
+      this.data.inventoryMovements = this.data.inventoryMovements.filter(movement => movement.productId !== productId);
     }
+    this.save();
+    return product;
+  }
+
+  recordInventoryMovement(product, delta, reason, reference = '') {
+    if (!Array.isArray(this.data.inventoryMovements)) this.data.inventoryMovements = [];
+    this.data.inventoryMovements.unshift({
+      id: `MOV-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      productId: product.id,
+      productName: product.name,
+      delta,
+      stockAfter: product.stock,
+      reason,
+      reference,
+      date: new Date().toISOString(),
+      user: this.currentUser?.name || 'Sistema'
+    });
+  }
+
+  adjustProductStock(productId, quantity, reason) {
+    const product = this.getProductById(productId);
+    const units = Number(quantity);
+    if (!product || !Number.isInteger(units) || !reason || product.stock + units < 0) return false;
+    if (units === 0) return product;
+    product.stock += units;
+    this.recordInventoryMovement(product, units, reason);
+    this.save();
+    return product;
+  }
+
+  setProductStock(productId, stock, reason) {
+    const product = this.getProductById(productId);
+    const nextStock = Number(stock);
+    if (!product || !Number.isInteger(nextStock) || nextStock < 0 || !reason) return false;
+    const delta = nextStock - product.stock;
+    product.stock = nextStock;
+    if (delta) this.recordInventoryMovement(product, delta, reason);
+    this.save();
+    return product;
+  }
+
+  updateProductStock(productId, qtySold, reference = '') {
+    const prod = this.getProductById(productId);
+    const quantity = Number(qtySold);
+    if (!prod || !Number.isInteger(quantity) || quantity < 0 || prod.stock < quantity) return false;
+    prod.stock -= quantity;
+    if (quantity) this.recordInventoryMovement(prod, -quantity, 'Venta POS', reference);
+    this.save();
+    return prod;
   }
 
   // --- Sales ---
   recordSale(saleData) {
+    if (saleData.type === 'pos') {
+      const quantities = new Map();
+      for (const item of saleData.items || []) {
+        quantities.set(item.productId, (quantities.get(item.productId) || 0) + Number(item.qty || 0));
+      }
+      for (const [productId, quantity] of quantities) {
+        const product = this.getProductById(productId);
+        if (!product || product.active === false || !Number.isInteger(quantity) || quantity <= 0 || product.stock < quantity) return false;
+      }
+    }
+
     const saleId = `SALE-${new Date().getFullYear()}-${String(this.data.sales.length + 1).padStart(3, '0')}`;
     const fullSale = {
       id: saleId,
@@ -834,8 +936,10 @@ class GymDatabase {
     // Update POS product stocks if it's POS sale
     if (saleData.items && saleData.type === 'pos') {
       saleData.items.forEach(item => {
-        if (item.productId) {
-          this.updateProductStock(item.productId, item.qty);
+        const product = this.getProductById(item.productId);
+        if (product) {
+          product.stock -= Number(item.qty) || 0;
+          this.recordInventoryMovement(product, -(Number(item.qty) || 0), 'Venta POS', saleId);
         }
       });
     }
@@ -887,7 +991,11 @@ class GymDatabase {
     if (sale.type === 'pos') {
       (sale.items || []).forEach(item => {
         const product = item.productId && this.getProductById(item.productId);
-        if (product) product.stock = (Number(product.stock) || 0) + (Number(item.qty) || 0);
+        if (product) {
+          const quantity = Number(item.qty) || 0;
+          product.stock = (Number(product.stock) || 0) + quantity;
+          this.recordInventoryMovement(product, quantity, 'Reverso por venta eliminada', saleId);
+        }
       });
     }
     this.save();
