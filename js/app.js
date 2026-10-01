@@ -2229,10 +2229,11 @@ class GymApp {
       return;
     }
     this.closeModal('modal-trainer-profile');
-    this.renderTrainerProfiles(document.getElementById('users-search-input')?.value || '');
+    this.renderTrainerProfiles(document.getElementById('users-search-input')?.value || '', document.getElementById('users-role-filter')?.value || 'all');
     this.renderMembers();
     this.renderClasses();
     this.showToast(trainerId ? 'Perfil del entrenador actualizado.' : 'Entrenador registrado.', 'success');
+  }
 
   openNewUserModal() {
     document.getElementById('user-form-title').textContent = "Registrar Empleado / Usuario";
