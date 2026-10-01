@@ -500,33 +500,39 @@
       generateCanvas: function(text, options) {
         options = options || {};
         var size = options.size || 160;
-        var qr = new QRCodeModel(options.typeNumber || 0, QRErrorCorrectLevel.M);
+        var qr = new QRCodeModel(options.typeNumber || 0, QRErrorCorrectLevel.H);
         qr.addData(text);
         qr.make();
 
         var moduleCount = qr.getModuleCount();
+        var quietZoneModules = options.quietZoneModules || 4;
+        var totalModules = moduleCount + quietZoneModules * 2;
+        var pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+        var modulePixels = Math.max(4, Math.floor(size * pixelRatio / totalModules));
+        var canvasSize = totalModules * modulePixels;
         var canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        canvas.style.borderRadius = options.borderRadius || '8px';
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+        canvas.style.width = (canvasSize / pixelRatio) + 'px';
+        canvas.style.height = (canvasSize / pixelRatio) + 'px';
+        canvas.style.borderRadius = options.borderRadius || '0';
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', 'Código QR de acceso');
         var ctx = canvas.getContext('2d');
 
         // Background
         ctx.fillStyle = options.bgColor || '#ffffff';
-        ctx.fillRect(0, 0, size, size);
-
-        var margin = options.margin !== undefined ? options.margin : 8;
-        var cellSize = (size - margin * 2) / moduleCount;
+        ctx.fillRect(0, 0, canvasSize, canvasSize);
 
         ctx.fillStyle = options.fgColor || '#000000';
         for (var row = 0; row < moduleCount; row++) {
           for (var col = 0; col < moduleCount; col++) {
             if (qr.isDark(row, col)) {
               ctx.fillRect(
-                Math.round(margin + col * cellSize),
-                Math.round(margin + row * cellSize),
-                Math.ceil(cellSize),
-                Math.ceil(cellSize)
+                (quietZoneModules + col) * modulePixels,
+                (quietZoneModules + row) * modulePixels,
+                modulePixels,
+                modulePixels
               );
             }
           }
@@ -614,12 +620,8 @@ class GymAccessScannerManager {
       const rearCam = cameras.find(c => /back|trasera|rear|environment/i.test(c.label || ''));
       const chosenCam = cameras.find(c => c.id === this.currentCameraId) || rearCam || cameras[0];
 
-      const qrBoxSize = Math.min(container.clientWidth || 250, 250) * 0.75;
-
       const config = {
-        fps: 15,
-        qrbox: { width: Math.round(qrBoxSize), height: Math.round(qrBoxSize) },
-        aspectRatio: 1.0,
+        fps: 20,
         experimentalFeatures: {
           useBarCodeDetectorIfSupported: true
         }
