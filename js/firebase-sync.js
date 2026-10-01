@@ -5,6 +5,16 @@
 
 const FIREBASE_CONFIG_KEY = 'FORZAGYM_FIREBASE_CONFIG';
 
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBF1mW2WR9jbR5L8KsW5GfOTFfk5ECxXsI",
+  authDomain: "forzagym-cloud.firebaseapp.com",
+  projectId: "forzagym-cloud",
+  storageBucket: "forzagym-cloud.firebasestorage.app",
+  messagingSenderId: "187661759618",
+  appId: "1:187661759618:web:e6fe2667eb1760c5f2b09b",
+  measurementId: "G-KPSRW4JQ5M"
+};
+
 class FirebaseSync {
   constructor() {
     this.app = null;
@@ -16,7 +26,7 @@ class FirebaseSync {
     this.docRef = null;
   }
 
-  // Load stored credentials or return null
+  // Load stored credentials or default to production Firebase config
   getConfig() {
     try {
       const stored = localStorage.getItem(FIREBASE_CONFIG_KEY);
@@ -26,7 +36,7 @@ class FirebaseSync {
     } catch (e) {
       console.warn("Could not read Firebase config from storage:", e);
     }
-    return null;
+    return DEFAULT_FIREBASE_CONFIG;
   }
 
   saveConfig(config) {
@@ -42,7 +52,7 @@ class FirebaseSync {
   init() {
     const config = this.getConfig();
     if (!config || !config.apiKey || !config.projectId) {
-      this.updateStatusUI('disconnected', 'Modo Local (Sin sincronizar en la nube)');
+      this.updateStatusUI('disconnected', 'Modo Local');
       return false;
     }
     return this.connect(config);
