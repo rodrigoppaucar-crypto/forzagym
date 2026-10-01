@@ -19,18 +19,29 @@ class GymApp {
     this.currentUser = window.GymDB.getCurrentUser();
     this.bindEvents();
     this.startLiveClock();
-    this.updateOccupancy();
-    this.updateHeaderUserProfile();
-    this.renderUserNavPermissions();
 
     // Initialize Firebase Cloud Realtime Sync
     if (window.GymFirebaseSync) {
       window.GymFirebaseSync.init();
     }
 
+    this.setupPOS();
+    if (!this.currentUser) {
+      this.currentView = null;
+      this.showCredentialsOnlyLogin();
+      return;
+    }
+
+    this.updateOccupancy();
+    this.updateHeaderUserProfile();
+    this.renderUserNavPermissions();
     const initialView = this.hasPermission('dashboard') ? 'dashboard' : this.getFirstPermittedView();
     this.renderView(initialView);
-    this.setupPOS();
+  }
+
+  showCredentialsOnlyLogin() {
+    document.getElementById('app')?.classList.add('session-locked');
+    this.openSwitchUserModal(true);
   }
 
   // Real-time callback when data updates from other devices via Firebase
@@ -1999,6 +2010,7 @@ class GymApp {
 
   closeModal(modalId) {
     const modal = document.getElementById(modalId);
+    if (modalId === 'modal-switch-user' && modal?.classList.contains('credentials-only')) return;
     if (modal) {
       modal.classList.remove('show');
     }
@@ -2369,7 +2381,7 @@ class GymApp {
     if (dropdown) dropdown.classList.toggle('show');
   }
 
-  openSwitchUserModal() {
+  openSwitchUserModal(credentialsOnly = false) {
     const users = window.GymDB.getUsers().filter(u => u.status === 'active');
     const container = document.getElementById('switch-users-list');
     
@@ -2391,14 +2403,22 @@ class GymApp {
     const uInput = document.getElementById('login-username');
     const pInput = document.getElementById('login-pin');
     const errMsg = document.getElementById('login-error-msg');
-    if (uInput) uInput.value = this.currentUser ? this.currentUser.username : "";
+    if (uInput) uInput.value = credentialsOnly ? '' : (this.currentUser ? this.currentUser.username : '');
     if (pInput) pInput.value = "";
     if (errMsg) errMsg.style.display = 'none';
+
+    const modal = document.getElementById('modal-switch-user');
+    const accountPicker = document.getElementById('login-account-picker');
+    const title = document.getElementById('login-modal-title');
+    if (modal) modal.classList.toggle('credentials-only', credentialsOnly);
+    if (accountPicker) accountPicker.hidden = credentialsOnly;
+    if (title) title.textContent = credentialsOnly ? 'Iniciar sesión' : 'Cambiar de Usuario / Iniciar Sesión';
 
     const dropdown = document.getElementById('user-dropdown-menu');
     if (dropdown) dropdown.classList.remove('show');
 
     this.openModal('modal-switch-user');
+    if (credentialsOnly) document.getElementById('app')?.classList.add('session-locked');
   }
 
   selectQuickUser(username) {
@@ -2430,6 +2450,8 @@ class GymApp {
     // Success
     this.currentUser = res.user;
     if (errMsg) errMsg.style.display = 'none';
+    document.getElementById('app')?.classList.remove('session-locked');
+    document.getElementById('modal-switch-user')?.classList.remove('credentials-only');
     this.closeModal('modal-switch-user');
     
     GymAudio.playAccess();
@@ -2438,15 +2460,23 @@ class GymApp {
     this.updateHeaderUserProfile();
     this.renderUserNavPermissions();
 
-    const targetView = this.hasPermission(this.currentView) ? this.currentView : this.getFirstPermittedView();
+    const targetView = this.currentView && this.hasPermission(this.currentView)
+      ? this.currentView
+      : (this.hasPermission('dashboard') ? 'dashboard' : this.getFirstPermittedView());
     this.renderView(targetView);
   }
 
   logoutUser() {
     const dropdown = document.getElementById('user-dropdown-menu');
     if (dropdown) dropdown.classList.remove('show');
-    this.openSwitchUserModal();
-    this.showToast("Sesión cerrada. Selecciona un usuario o ingresa credenciales.", "info");
+    if (window.GymScanner) window.GymScanner.stopCamera();
+    this.stopBarcodeCamera();
+    this.posCart = [];
+    this.currentUser = null;
+    this.currentView = null;
+    window.GymDB.clearCurrentUser();
+    this.renderUserNavPermissions();
+    this.showCredentialsOnlyLogin();
   }
 
   // --- Global Event Bindings ---
@@ -2479,6 +2509,7 @@ class GymApp {
     // Modal close backdrops & close buttons
     document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
       backdrop.addEventListener('click', (e) => {
+        if (backdrop.id === 'modal-switch-user' && backdrop.classList.contains('credentials-only')) return;
         if (e.target === backdrop) {
           backdrop.classList.remove('show');
         }
@@ -2487,6 +2518,7 @@ class GymApp {
     document.querySelectorAll('.modal-close').forEach(btn => {
       btn.addEventListener('click', () => {
         const modal = btn.closest('.modal-backdrop');
+        if (modal?.id === 'modal-switch-user' && modal.classList.contains('credentials-only')) return;
         if (modal) modal.classList.remove('show');
       });
     });

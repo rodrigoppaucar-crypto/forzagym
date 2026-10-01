@@ -665,16 +665,19 @@ class GymDatabase {
     } catch (e) {
       console.warn("Could not load active user:", e);
     }
-    // Default to admin
-    const defaultAdmin = (this.data.users || []).find(u => u.role === 'admin') || INITIAL_DATA.users[0];
-    this.setCurrentUser(defaultAdmin);
-    return defaultAdmin;
+    this.currentUser = null;
+    localStorage.removeItem('FORZAGYM_CURRENT_USER');
+    return null;
   }
 
   setCurrentUser(user) {
     this.currentUser = user;
     try {
-      localStorage.setItem('FORZAGYM_CURRENT_USER', JSON.stringify(user));
+      if (user) {
+        localStorage.setItem('FORZAGYM_CURRENT_USER', JSON.stringify(user));
+      } else {
+        localStorage.removeItem('FORZAGYM_CURRENT_USER');
+      }
     } catch (e) {
       console.error("Error setting active user:", e);
     }
@@ -682,7 +685,11 @@ class GymDatabase {
   }
 
   getCurrentUser() {
-    return this.currentUser || this.loadCurrentUser();
+    return this.currentUser;
+  }
+
+  clearCurrentUser() {
+    return this.setCurrentUser(null);
   }
 
   save(dataToSave = null, skipCloudPush = false) {

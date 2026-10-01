@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=pos-stock-v3" />
+  <link rel="stylesheet" href="css/style.css?v=session-v1" />
 </head>
 <body>
 
@@ -1895,24 +1895,23 @@
       <div class="modal-header">
         <div class="modal-title">
           <i class="fa-solid fa-arrow-right-arrow-left" style="color: var(--primary);"></i>
-          <span>Cambiar de Usuario / Iniciar Sesión</span>
+          <span id="login-modal-title">Cambiar de Usuario / Iniciar Sesión</span>
         </div>
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-          Selecciona tu cuenta o ingresa con tu nombre de usuario y PIN personal:
-        </p>
-
-        <!-- Quick user selector cards -->
-        <div class="switch-users-grid" id="switch-users-list">
-          <!-- Dynamic quick user tiles -->
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 12px; margin: 1.25rem 0;">
-          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">O ingresa manualmente</span>
-          <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+        <div id="login-account-picker">
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Selecciona una cuenta o ingresa tus credenciales:
+          </p>
+          <div class="switch-users-grid" id="switch-users-list">
+            <!-- Dynamic quick user tiles -->
+          </div>
+          <div class="login-form-divider" style="display: flex; align-items: center; gap: 12px; margin: 1.25rem 0;">
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+            <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">O ingresa manualmente</span>
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+          </div>
         </div>
 
         <form id="form-user-login" onsubmit="GymAppInstance.handleLoginSubmit(event)">
@@ -1954,13 +1953,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 
   <!-- Core Scripts -->
-  <script src="js/firebase-sync.js?v=pos-stock-v3"></script>
-  <script src="js/db.js?v=pos-stock-v3"></script>
+  <script src="js/firebase-sync.js?v=session-v1"></script>
+  <script src="js/db.js?v=session-v1"></script>
   <script src="js/audio.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="js/qr.js?v=pos-stock-v3"></script>
-  <script src="js/pdf-ticket.js?v=pos-stock-v3"></script>
+  <script src="js/qr.js?v=session-v1"></script>
+  <script src="js/pdf-ticket.js?v=session-v1"></script>
   <script src="js/charts.js"></script>
-  <script src="js/app.js?v=pos-stock-v3"></script>
+  <script src="js/app.js?v=session-v1"></script>
 </body>
 </html>

@@ -122,6 +122,10 @@ body {
   position: relative;
 }
 
+#app.session-locked {
+  display: none;
+}
+
 /* Sidebar Styles */
 .sidebar {
   width: var(--sidebar-width);
@@ -1059,6 +1063,28 @@ body {
 .modal-backdrop.show {
   opacity: 1;
   pointer-events: auto;
+}
+
+.modal-backdrop.credentials-only {
+  z-index: 5000;
+  background: var(--bg-primary);
+  backdrop-filter: none;
+}
+
+.modal-backdrop.credentials-only .modal-dialog {
+  max-width: 430px;
+}
+
+.modal-backdrop.credentials-only .modal-header {
+  justify-content: center;
+}
+
+.modal-backdrop.credentials-only .modal-title {
+  font-size: 1.15rem;
+}
+
+.modal-backdrop.credentials-only .modal-close {
+  display: none;
 }
 
 .modal-dialog {
