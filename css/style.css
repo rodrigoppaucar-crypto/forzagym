@@ -1346,6 +1346,27 @@ body {
   margin-bottom: 1rem;
 }
 
+.product-new-category {
+  margin-top: 0.5rem;
+}
+
+.product-barcode-entry {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.product-barcode-entry .btn {
+  flex: 0 0 42px;
+}
+
+.product-form-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-dim);
+  font-size: 0.73rem;
+  line-height: 1.4;
+}
+
 .inventory-toolbar .form-control {
   flex: 1 1 240px;
 }

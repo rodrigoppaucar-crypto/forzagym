@@ -949,7 +949,11 @@ class GymApp {
 
   escapePosHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, character => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
     })[character]);
   }
 
@@ -957,8 +961,19 @@ class GymApp {
     const product = productId ? window.GymDB.getProductById(productId) : null;
     document.getElementById('product-form-title').textContent = product ? 'Editar producto' : 'Nuevo producto';
     document.getElementById('product-edit-id').value = product?.id || '';
+    this.populateProductCategories(product?.category || '');
+    const categorySelect = document.getElementById('product-category-select');
+    const newCategoryInput = document.getElementById('product-category-new');
+    if (product && ![...categorySelect.options].some(option => option.value === product.category)) {
+      categorySelect.value = '__new__';
+      newCategoryInput.hidden = false;
+      newCategoryInput.value = product.category;
+    } else {
+      categorySelect.value = product?.category || (categorySelect.querySelector('option[value="Otros"]') ? 'Otros' : categorySelect.options[0]?.value || '__new__');
+      newCategoryInput.hidden = categorySelect.value !== '__new__';
+      newCategoryInput.value = categorySelect.value === '__new__' && product ? product.category : '';
+    }
     document.getElementById('product-name').value = product?.name || '';
-    document.getElementById('product-category').value = product?.category || 'Otros';
     document.getElementById('product-cost').value = product?.costPrice ?? 0;
     document.getElementById('product-sale-price').value = product?.salePrice ?? '';
     document.getElementById('product-stock').value = product?.stock ?? 0;
@@ -969,11 +984,50 @@ class GymApp {
     document.getElementById('modal-product-form').classList.add('show');
   }
 
+  populateProductCategories(selectedCategory = '') {
+    const select = document.getElementById('product-category-select');
+    if (!select) return;
+    const categories = [...new Set([
+      'Suplementos', 'Bebidas', 'Snacks', 'Accesorios', 'Otros',
+      ...window.GymDB.getProducts().map(product => String(product.category || '').trim())
+    ].filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    if (selectedCategory && !categories.includes(selectedCategory)) categories.push(selectedCategory);
+    select.innerHTML = categories.map(category => `<option value="${this.escapePosHtml(category)}">${this.escapePosHtml(category)}</option>`).join('') +
+      '<option value="__new__">+ Crear categoría nueva</option>';
+  }
+
+  onProductCategoryChanged(value) {
+    const input = document.getElementById('product-category-new');
+    input.hidden = value !== '__new__';
+    if (value === '__new__') input.focus();
+  }
+
+  handleProductBarcodeEnter() {
+    const field = document.getElementById('product-barcode');
+    const barcode = field.value.trim();
+    if (!barcode) return;
+    const existing = window.GymDB.getProducts().find(product => String(product.barcode || '').trim().toLowerCase() === barcode.toLowerCase());
+    if (existing) {
+      if (confirm(`El código ${barcode} ya pertenece a "${existing.name}". ¿Abrirlo para editar?`)) {
+        this.openProductModal(existing.id);
+      } else {
+        field.select();
+      }
+      return;
+    }
+    document.getElementById('product-name').focus();
+    this.showToast('Código leído. Completa los datos del producto.', 'success');
+  }
+
   saveProduct() {
     const productId = document.getElementById('product-edit-id').value;
+    const selectedCategory = document.getElementById('product-category-select').value;
+    const category = selectedCategory === '__new__'
+      ? document.getElementById('product-category-new').value.trim()
+      : selectedCategory;
     const data = {
       name: document.getElementById('product-name').value.trim(),
-      category: document.getElementById('product-category').value.trim(),
+      category,
       costPrice: Number(document.getElementById('product-cost').value),
       salePrice: Number(document.getElementById('product-sale-price').value),
       stock: Number(document.getElementById('product-stock').value),
@@ -1004,7 +1058,7 @@ class GymApp {
     this.closeModal('modal-product-form');
     this.renderPOS(this.posFilterCategory || 'all', this.posSearchQuery || '');
     this.renderInventory();
-    this.showToast(productId ? 'Producto actualizado.' : 'Producto agregado al inventario.', 'success');
+    this.showToast(productId ? 'Producto actualizado.' : 'Producto registrado y sincronizado.', 'success');
   }
 
   openInventoryModal() {
