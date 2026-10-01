@@ -24,6 +24,7 @@ class FirebaseSync {
     this.isSyncing = false;
     this.lastSyncTime = null;
     this.docRef = null;
+    this.pendingData = null;
   }
 
   // Load stored credentials or default to production Firebase config
@@ -137,24 +138,35 @@ class FirebaseSync {
   // Push local data to Firestore
   async pushData(data) {
     if (!this.firestore || !this.docRef || !this.isConnected) return;
-    if (this.isSyncing) return; // Prevent loops
+    if (this.isSyncing) {
+      this.pendingData = data;
+      return true;
+    }
 
     try {
       this.isSyncing = true;
       this.updateStatusUI('syncing', 'Sincronizando cambios...');
-      
-      const payload = {
-        payload: data,
-        updatedAt: new Date().toISOString(),
-        updatedBy: window.GymDB && window.GymDB.currentUser ? window.GymDB.currentUser.name : 'Terminal'
-      };
 
-      await this.docRef.set(payload, { merge: true });
-      this.lastSyncTime = new Date();
+      let dataToPush = data;
+      do {
+        this.pendingData = null;
+        const payload = {
+          payload: dataToPush,
+          updatedAt: new Date().toISOString(),
+          updatedBy: window.GymDB && window.GymDB.currentUser ? window.GymDB.currentUser.name : 'Terminal'
+        };
+
+        await this.docRef.set(payload, { merge: true });
+        this.lastSyncTime = new Date();
+        dataToPush = this.pendingData;
+      } while (dataToPush);
+
       this.updateStatusUI('connected', 'Sincronizado en Vivo 🟢');
+      return true;
     } catch (e) {
       console.error("Error pushing data to Firebase:", e);
       this.updateStatusUI('error', 'Error al sincronizar con la nube');
+      return false;
     } finally {
       this.isSyncing = false;
     }

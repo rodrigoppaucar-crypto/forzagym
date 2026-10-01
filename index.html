@@ -363,8 +363,21 @@
           <!-- Terminal Scanner Box -->
           <div class="scanner-terminal-card">
             <div class="scanner-camera-box">
+              <div id="scanner-camera-placeholder">
+                <i class="fa-solid fa-qrcode" style="font-size: 5rem; color: rgba(0, 242, 254, 0.4);"></i>
+                <span>Activa la cámara para escanear</span>
+              </div>
+              <div id="scanner-camera-viewport"></div>
               <div class="scan-laser-line"></div>
-              <i class="fa-solid fa-qrcode" style="font-size: 5rem; color: rgba(0, 242, 254, 0.4);"></i>
+            </div>
+
+            <div class="scanner-camera-controls">
+              <button id="btn-toggle-camera-scan" class="btn btn-primary" type="button" onclick="GymScanner.toggleCamera()">
+                <i class="fa-solid fa-camera"></i> Activar Cámara de Escaneo
+              </button>
+              <button class="btn btn-outline" type="button" onclick="GymScanner.switchCamera()" title="Cambiar entre cámaras">
+                <i class="fa-solid fa-camera-rotate"></i> Cambiar cámara
+              </button>
             </div>
 
             <div style="width: 100%; max-width: 400px; display: flex; gap: 0.6rem; margin-bottom: 1rem;">
@@ -1703,6 +1716,7 @@
   <script src="js/firebase-sync.js"></script>
   <script src="js/db.js"></script>
   <script src="js/audio.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="js/qr.js"></script>
   <script src="js/pdf-ticket.js"></script>
   <script src="js/charts.js"></script>
