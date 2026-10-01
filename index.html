@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ForzaGym - Sistema de Gestión de Gimnasio en Pallatanga</title>
+  
+  <!-- SEO & Web App Meta Tags -->
+  <meta name="description" content="Sistema informático completo y profesional de gestión de gimnasio ForzaGym en Pallatanga, control de accesos, torniquete virtual, punto de venta POS, rutinas y membresías." />
+  <meta name="theme-color" content="#0a0e17" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+
+  <!-- Google Fonts: Outfit (Modern Sport & Luxury Typography) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- FontAwesome 6 Pro CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div id="app">
+    <!-- ==========================================================================
+         SIDEBAR NAVIGATION
+         ========================================================================== -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="brand-logo" onclick="GymAppInstance.renderView('dashboard'); return false;">
+          <div class="brand-icon">
+            <i class="fa-solid fa-bolt-lightning"></i>
+          </div>
+          <div class="brand-info">
+            <h1>FORZAGYM</h1>
+            <span>PALLATANGA</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Principal</div>
+        <button class="nav-item active" data-view="dashboard">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span>Dashboard</span>
+        </button>
+
+        <button class="nav-item" data-view="access">
+          <i class="fa-solid fa-id-card-clip"></i>
+          <span>Control de Acceso</span>
+          <span class="nav-badge" style="background: var(--accent);">VIVO</span>
+        </button>
+
+        <button class="nav-item" data-view="members">
+          <i class="fa-solid fa-users"></i>
+          <span>Socios & Clientes</span>
+        </button>
+
+        <button class="nav-item" data-view="memberships">
+          <i class="fa-solid fa-ticket"></i>
+          <span>Planes & Membresías</span>
+        </button>
+
+        <div class="nav-section-title">Comercial & Servicios</div>
+        <button class="nav-item" data-view="pos">
+          <i class="fa-solid fa-cash-register"></i>
+          <span>Tienda POS & Stock</span>
+        </button>
+
+        <button class="nav-item" data-view="classes">
+          <i class="fa-solid fa-calendar-days"></i>
+          <span>Clases & Reservas</span>
+        </button>
+
+        <button class="nav-item" data-view="routines">
+          <i class="fa-solid fa-dumbbell"></i>
+          <span>Rutinas & Medidas</span>
+        </button>
+
+        <div class="nav-section-title">Administración</div>
+        <button class="nav-item" data-view="finances">
+          <i class="fa-solid fa-wallet"></i>
+          <span>Caja & Finanzas</span>
+        </button>
+
+        <button class="nav-item" data-view="member-portal">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+          <span>Portal del Socio</span>
+        </button>
+
+        <button class="nav-item" data-view="settings">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Configuración</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Occupancy Widget -->
+      <div class="sidebar-footer">
+        <div class="occupancy-widget">
+          <div class="occupancy-header">
+            <span>Aforo en Tiempo Real</span>
+            <span id="occupancy-count">24 / 120 pers.</span>
+          </div>
+          <div class="occupancy-bar">
+            <div class="occupancy-fill" id="occupancy-bar-fill" style="width: 25%;"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ==========================================================================
+         MAIN CONTENT WRAPPER
+         ========================================================================== -->
+    <div class="main-wrapper">
+      
+      <!-- Top Navbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-toggle" id="mobile-menu-btn" aria-label="Abrir Menú">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+
+          <div class="global-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="global-search-input" placeholder="Buscar por Nombre, DNI o ID..." />
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Live Clock -->
+          <div class="live-clock-badge">
+            <span class="pulse-dot"></span>
+            <span id="live-clock-date">Mié, 30 Sep</span>
+            <strong id="live-clock-time" style="color: var(--text-main); margin-left: 4px;">17:18:00</strong>
+          </div>
+
+          <!-- Quick Access Scanner -->
+          <button class="btn-access-shortcut" onclick="GymAppInstance.renderView('access')">
+            <i class="fa-solid fa-qrcode"></i>
+            <span>Torniquete</span>
+          </button>
+
+          <!-- Audio FX Toggle -->
+          <button class="action-btn-circle" id="btn-toggle-sound" onclick="GymAppInstance.toggleSound()" title="Sonidos del Sistema">
+            <i class="fa-solid fa-volume-high"></i>
+          </button>
+
+          <!-- Theme Toggle -->
+          <button class="action-btn-circle" onclick="GymAppInstance.toggleTheme()" title="Modo Claro / Oscuro">
+            <i class="fa-solid fa-circle-half-stroke"></i>
+          </button>
+
+          <!-- User Profile -->
+          <div class="user-profile-menu" onclick="GymAppInstance.renderView('settings')">
+            <div class="user-avatar">AD</div>
+            <div class="user-meta">
+              <span class="user-name">Administrador</span>
+              <span class="user-role-badge">Online</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ==========================================================================
+           VIEW 1: DASHBOARD
+           ========================================================================== -->
+      <main id="view-dashboard" class="view-container active">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Panel de Control Principal</h2>
+            <p>Métricas operativas en tiempo real y resumen general del gimnasio</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-primary" onclick="GymAppInstance.openNewMemberModal()">
+              <i class="fa-solid fa-user-plus"></i> Inscribir Socio
+            </button>
+            <button class="btn btn-secondary" onclick="GymAppInstance.renderView('pos')">
+              <i class="fa-solid fa-cart-plus"></i> Venta Rápida POS
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="metrics-grid">
+          <div class="metric-card" style="--metric-color: var(--primary);">
+            <div class="metric-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Socios Activos</div>
+              <div class="metric-value" id="kpi-active-members">0</div>
+              <div class="metric-trend trend-up"><i class="fa-solid fa-arrow-trend-up"></i> +12% este mes</div>
+            </div>
+          </div>
+
+          <div class="metric-card" style="--metric-color: var(--accent);">
+            <div class="metric-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Ingresos del Mes</div>
+              <div class="metric-value" id="kpi-month-income">$0.00</div>
+              <div class="metric-trend trend-up"><i class="fa-solid fa-chart-line"></i> Meta 92% alcanzada</div>
+            </div>
+          </div>
+
+          <div class="metric-card" style="--metric-color: var(--purple);">
+            <div class="metric-icon"><i class="fa-solid fa-fingerprint"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Asistencias Hoy</div>
+              <div class="metric-value" id="kpi-today-att">0</div>
+              <div class="metric-trend"><i class="fa-solid fa-person-running"></i> Entrenando hoy</div>
+            </div>
+          </div>
+
+          <div class="metric-card" style="--metric-color: var(--secondary);">
+            <div class="metric-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Membresías por Vencer</div>
+              <div class="metric-value" id="kpi-expired-members">0</div>
+              <div class="metric-trend trend-down"><i class="fa-solid fa-bell"></i> Requieren renovación</div>
+            </div>
+          </div>
+
+          <div class="metric-card" style="--metric-color: var(--warning);">
+            <div class="metric-icon"><i class="fa-solid fa-vault"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Caja Actual</div>
+              <div class="metric-value" id="kpi-cash-register">$0.00</div>
+              <div class="metric-trend trend-up"><i class="fa-solid fa-lock-open"></i> Caja abierta</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="dashboard-grid">
+          <!-- Income Analytics -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-chart-simple"></i>
+                <span>Ingresos: Membresías vs Tienda POS</span>
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">Últimos 6 meses</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="chart-income"></canvas>
+            </div>
+          </div>
+
+          <!-- Plan Distribution -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Membresías Preferidas</span>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: center; align-items: center; height: 260px;">
+              <canvas id="chart-plans-doughnut"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Peak Hours & Recent Attendances -->
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-fire"></i>
+                <span>Horas Pico de Afluencia</span>
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">Distribución promedio diaria</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="chart-peak-hours"></canvas>
+            </div>
+          </div>
+
+          <!-- Live Attendance Log -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-door-open"></i>
+                <span>Entradas Recientes</span>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderView('access')">Ver Todo</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Socio</th>
+                    <th>Estado</th>
+                    <th>Hora</th>
+                    <th>Método</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboard-recent-attendances">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ==========================================================================
+           VIEW 2: ACCESS CONTROL & VIRTUAL TURNSTILE
+           ========================================================================== -->
+      <section id="view-access" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Control de Acceso & Torniquete Virtual</h2>
+            <p>Escaneo de códigos QR, credenciales digitales y validación automática de pagos</p>
+          </div>
+        </div>
+
+        <div class="access-control-wrapper">
+          <!-- Terminal Scanner Box -->
+          <div class="scanner-terminal-card">
+            <div class="scanner-camera-box">
+              <div class="scan-laser-line"></div>
+              <i class="fa-solid fa-qrcode" style="font-size: 5rem; color: rgba(0, 242, 254, 0.4);"></i>
+            </div>
+
+            <div style="width: 100%; max-width: 400px; display: flex; gap: 0.6rem; margin-bottom: 1rem;">
+              <input type="text" id="turnstile-scan-input" class="form-control" placeholder="Escanear QR o ingresar DNI / ID..." onkeydown="if(event.key==='Enter') GymAppInstance.simulateScan()" autofocus />
+              <button class="btn btn-primary" onclick="GymAppInstance.simulateScan()">
+                <i class="fa-solid fa-right-to-bracket"></i> Validar
+              </button>
+            </div>
+
+            <!-- Quick Member Test Shortcuts -->
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-bottom: 1.25rem;">
+              <button class="btn btn-outline btn-sm" onclick="GymAppInstance.simulateScan('1724589632')">
+                <i class="fa-solid fa-user-check"></i> Test: Mateo (Activo)
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="GymAppInstance.simulateScan('0921478523')">
+                <i class="fa-solid fa-user-xmark"></i> Test: Carlos (Vencido)
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="GymAppInstance.simulateScan('1804561234')">
+                <i class="fa-solid fa-snowflake"></i> Test: Diego (Congelado)
+              </button>
+            </div>
+
+            <!-- Turnstile Live Indicator Result -->
+            <div id="turnstile-result-box" class="gate-status-indicator gate-idle">
+              <i class="fa-solid fa-barcode-read" style="font-size: 1.8rem; margin-bottom: 0.3rem;"></i>
+              <div>ESPERANDO LECTURA DE CÓDIGO QR O DNI</div>
+              <div style="font-size: 0.78rem; font-weight: normal; margin-top: 2px;">Listo para verificar acceso de socio</div>
+            </div>
+
+            <!-- Member Card Quick Display on Scan -->
+            <div id="turnstile-member-card" class="card" style="width: 100%; margin-top: 1.25rem; display: none; background: rgba(0, 242, 254, 0.05); border-color: var(--primary);">
+              <div style="display: flex; align-items: center; gap: 1rem; text-align: left;">
+                <img id="turnstile-member-img" src="" alt="Avatar" style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid var(--primary); object-fit: cover;" />
+                <div>
+                  <h3 id="turnstile-member-name" style="font-size: 1.15rem; font-weight: 800;">Nombre Socio</h3>
+                  <div id="turnstile-member-plan" style="color: var(--primary); font-weight: 700; font-size: 0.85rem;">Plan Mensual</div>
+                  <div id="turnstile-member-expiry" style="font-size: 0.78rem; color: var(--text-muted);">Vence el 2026-10-15</div>
+                  <div id="turnstile-member-visits" style="font-size: 0.75rem; color: var(--text-dim);">12 visitas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real-Time Log -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Registro de Entradas del Día</span>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="GymExporter.exportToCSV('asistencias_gym', GymDB.getTodayAttendances())">
+                <i class="fa-solid fa-file-csv"></i> CSV
+              </button>
+            </div>
+            <div id="access-recent-log" style="max-height: 550px; overflow-y: auto;">
+              <!-- Dynamic records -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+           VIEW 3: MEMBERS MANAGEMENT
+           ========================================================================== -->
+      <section id="view-members" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Gestión de Socios & Clientes</h2>
+            <p>Directorio integral, fichas antropométricas, carnet digital y renovaciones</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-outline" onclick="GymExporter.exportToCSV('socios_gimnasio', GymDB.getMembers())">
+              <i class="fa-solid fa-download"></i> Exportar Socios
+            </button>
+            <button class="btn btn-primary" onclick="GymAppInstance.openNewMemberModal()">
+              <i class="fa-solid fa-user-plus"></i> Inscribir Nuevo Socio
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="card" style="margin-bottom: 1.25rem; padding: 0.85rem 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderMembers('all')">Todos</button>
+              <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderMembers('active')" style="color: var(--accent);">Activos</button>
+              <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderMembers('expired')" style="color: var(--secondary);">Vencidos</button>
+              <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderMembers('frozen')" style="color: var(--status-frozen);">Congelados</button>
+            </div>
+
+            <div style="width: 260px;">
+              <input type="text" class="form-control" placeholder="Filtrar por nombre o cédula..." oninput="GymAppInstance.renderMembers('all', this.value)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Members Table -->
+        <div class="card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Socio / Identificación</th>
+                  <th>Membresía</th>
+                  <th>Vencimiento</th>
+                  <th>Teléfono</th>
+                  <th>Visitas</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="members-table-body">
+                <!-- Dynamic member rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+           VIEW 4: MEMBERSHIPS & PLANS
+           ========================================================================== -->
+      <section id="view-memberships" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Planes, Membresías & Promociones</h2>
+            <p>Configuración de tarifas, beneficios incluidos y duración de planes</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-primary" onclick="GymAppInstance.openNewPlanModal()">
+              <i class="fa-solid fa-plus"></i> Nuevo Plan
+            </button>
+          </div>
+        </div>
+
+        <div class="dashboard-grid" id="memberships-grid-container" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+          <!-- Dynamic Membership Cards -->
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+           VIEW 5: POS & STORE
+           ========================================================================== -->
+      <section id="view-pos" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Punto de Venta (POS) & Inventario de Tienda</h2>
+            <p>Venta rápida de suplementos, bebidas energéticas, indumentaria y accesorios</p>
+          </div>
+        </div>
+
+        <div class="pos-layout">
+          <!-- Products Catalog -->
+          <div class="card">
+            <!-- Category Tabs & Search -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap;">
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('all')">Todos</button>
+                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('Suplementos')">Suplementos</button>
+                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('Bebidas')">Bebidas</button>
+                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('Snacks')">Snacks</button>
+                <button class="btn btn-outline btn-sm" onclick="GymAppInstance.renderPOS('Accesorios')">Accesorios</button>
+              </div>
+
+              <div style="width: 220px;">
+                <input type="text" class="form-control" placeholder="Buscar producto..." oninput="GymAppInstance.renderPOS('all', this.value)" />
+              </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="pos-products-grid" id="pos-products-list">
+              <!-- Dynamic Products -->
+            </div>
+          </div>
+
+          <!-- POS Cart & Checkout -->
+          <div class="pos-cart">
+            <div class="card-header" style="margin-bottom: 0.5rem;">
+              <div class="card-title">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Carrito de Compra (<span id="pos-cart-items-count">0</span>)</span>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="GymAppInstance.clearCart()" style="color: var(--secondary);">
+                <i class="fa-solid fa-trash"></i> Vaciar
+              </button>
+            </div>
+
+            <!-- Cart Items -->
+            <div class="pos-cart-items" id="pos-cart-items-container">
+              <!-- Dynamic Cart items -->
+            </div>
+
+            <!-- Cart Details & Customer Selection -->
+            <div class="cart-summary">
+              <div class="form-group" style="margin-bottom: 0.6rem;">
+                <input type="text" id="pos-customer-input" class="form-control" placeholder="Nombre del Cliente (Opcional)" />
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0.6rem;">
+                <select id="pos-payment-method" class="form-select">
+                  <option value="Efectivo">Pago en Efectivo</option>
+                  <option value="Tarjeta Débito">Tarjeta Débito</option>
+                  <option value="Tarjeta Crédito">Tarjeta Crédito</option>
+                  <option value="Transferencia">Transferencia Bancaria</option>
+                </select>
+              </div>
+
+              <div class="summary-row">
+                <span>Subtotal Neto:</span>
+                <span id="pos-cart-subtotal">$0.00</span>
+              </div>
+              <div class="summary-row">
+                <span>IVA (15%):</span>
+                <span id="pos-cart-tax">$0.00</span>
+              </div>
+              <div class="summary-row summary-total">
+                <span>TOTAL:</span>
+                <span id="pos-cart-total" style="color: var(--accent);">$0.00</span>
+              </div>
+
+              <button class="btn btn-primary" style="width: 100%; margin-top: 0.75rem; padding: 0.85rem;" onclick="GymAppInstance.checkoutPOS()">
+                <i class="fa-solid fa-receipt"></i> Cobrar e Imprimir Ticket
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+           VIEW 6: CLASSES & CALENDAR
+           ========================================================================== -->
+      <section id="view-classes" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Clases Grupales & Cronograma Semanal</h2>
+            <p>Calendario interactivo, control de cupos y reservas de salas</p>
+          </div>
+        </div>
+
+        <div class="schedule-grid" id="schedule-calendar-grid">
+          <!-- Dynamic Days Columns -->
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+           VIEW 7: ROUTINES & MEASUREMENTS
+           ========================================================================== -->
+      <section id="view-routines" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Rutinas de Entrenamiento & Fichas Antropométricas</h2>
+            <p>Planes personalizados por socio, biblioteca de ejercicios y control de evolución corporal</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <label style="font-weight: 700; font-size: 0.9rem;">Seleccionar Socio:</label>
+            <select id="routine-member-select" class="form-select" style="max-width: 350px;" onchange="GymAppInstance.loadMemberRoutine(this.value)">
+              <!-- Dynamic members -->
+            </select>
+          </div>
+        </div>
+
+        <div id="routine-display-container">
+          <!-- Dynamic Routine info & days -->
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+           VIEW 8: CASH REGISTER & FINANCES
+           ========================================================================== -->
+      <section id="view-finances" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Caja Chica, Finanzas & Arqueos</h2>
+            <p>Control de ingresos, egresos operativos, ventas de membresías y balance financiero</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-secondary" onclick="GymAppInstance.openAddExpenseModal()">
+              <i class="fa-solid fa-circle-minus"></i> Registrar Gasto / Egreso
+            </button>
+            <button class="btn btn-outline" onclick="GymExporter.exportToCSV('ventas_financieras', GymDB.data.sales)">
+              <i class="fa-solid fa-file-excel"></i> Exportar Ventas
+            </button>
+          </div>
+        </div>
+
+        <!-- Financial KPI Cards -->
+        <div class="metrics-grid">
+          <div class="metric-card" style="--metric-color: var(--accent);">
+            <div class="metric-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Ingresos Totales</div>
+              <div class="metric-value" id="fin-total-income">$0.00</div>
+            </div>
+          </div>
+
+          <div class="metric-card" style="--metric-color: var(--secondary);">
+            <div class="metric-icon"><i class="fa-solid fa-money-bill-transfer"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Gastos / Egresos</div>
+              <div class="metric-value" id="fin-total-expense">$0.00</div>
+            </div>
+          </div>
+
+          <div class="metric-card" style="--metric-color: var(--primary);">
+            <div class="metric-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Balance Neto</div>
+              <div class="metric-value" id="fin-net-balance">$0.00</div>
+            </div>
+          </div>
+
+          <div class="metric-card" style="--metric-color: var(--warning);">
+            <div class="metric-icon"><i class="fa-solid fa-cash-register"></i></div>
+            <div class="metric-details">
+              <div class="metric-label">Efectivo en Cajón</div>
+              <div class="metric-value" id="fin-cash-drawer">$0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sales & Expenses Tables -->
+        <div class="dashboard-grid">
+          <!-- Sales History -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-receipt"></i>
+                <span>Historial de Ventas & Facturación</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Recibo</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Tipo</th>
+                    <th>Método</th>
+                    <th>Total</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="fin-sales-table-body">
+                  <!-- Dynamic Sales -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Expenses History -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+                <span>Egresos & Gastos Operativos</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th>Categoría</th>
+                    <th>Responsable</th>
+                    <th>Monto</th>
+                  </tr>
+                </thead>
+                <tbody id="fin-expenses-table-body">
+                  <!-- Dynamic Expenses -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+           VIEW 9: MEMBER SELF-SERVICE PORTAL
+           ========================================================================== -->
+      <section id="view-member-portal" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Portal del Socio (App Móvil / Terminal)</h2>
+            <p>Pase virtual de acceso con código QR, estado de membresía y rutina del día interactiva</p>
+          </div>
+          <div class="view-actions">
+            <label style="font-size: 0.85rem; color: var(--text-muted);">Simular como socio:</label>
+            <select id="portal-select-member" class="form-select" style="width: 250px;" onchange="GymAppInstance.loadMemberPortalView(this.value)">
+              <!-- Dynamic members -->
+            </select>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Digital Pass Card -->
+          <div style="display: flex; justify-content: center;">
+            <div class="digital-pass-card">
+              <div style="text-align: center;">
+                <div style="font-size: 1.15rem; font-weight: 900; color: var(--primary);">FORZAGYM</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Pallatanga - Pase Virtual</div>
+              </div>
+
+              <div style="text-align: center;">
+                <img id="portal-member-img" src="" alt="Socio" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--primary); object-fit: cover; margin-bottom: 0.5rem;" />
+                <h3 id="portal-member-name" style="font-size: 1.15rem; font-weight: 800;">Nombre Socio</h3>
+                <span id="portal-plan-name" style="font-size: 0.82rem; color: var(--primary); font-weight: 700;">Plan Mensual PRO</span>
+              </div>
+
+              <div class="pass-qr-box" id="portal-qr-card"></div>
+
+              <div style="width: 100%; display: flex; justify-content: space-between; font-size: 0.78rem; background: rgba(255,255,255,0.06); padding: 0.6rem; border-radius: var(--radius-md);">
+                <div>
+                  <div style="color: var(--text-dim); font-size: 0.68rem;">VENCE:</div>
+                  <strong id="portal-end-date">2026-10-01</strong>
+                </div>
+                <div style="text-align: right;">
+                  <div style="color: var(--text-dim); font-size: 0.68rem;">ESTADO:</div>
+                  <span id="portal-status-badge" class="status-badge active">ACTIVO</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Today's Workout Routine Checklist -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Mi Rutina del Día (Entrenamiento Interactivo)</span>
+              </div>
+              <span id="portal-visits" style="font-size: 0.78rem; color: var(--accent); font-weight: 700;">0 visitas</span>
+            </div>
+            
+            <div id="portal-routine-checklist" style="margin-top: 1rem;">
+              <!-- Dynamic Checklist -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+           VIEW 10: SETTINGS & BACKUP
+           ========================================================================== -->
+      <section id="view-settings" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Configuración del Gimnasio & Respaldo</h2>
+            <p>Personalización de marca, datos tributarios, tarifas de impuestos y copias de seguridad</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-primary" onclick="GymAppInstance.saveSettings()">
+              <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+            </button>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- General Gym Branding -->
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom: 1.25rem;">
+              <i class="fa-solid fa-building"></i>
+              <span>Datos del Gimnasio & Facturación</span>
+            </h3>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Nombre del Gimnasio:</label>
+                <input type="text" id="set-gym-name" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Slogan Comercial:</label>
+                <input type="text" id="set-slogan" class="form-control" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Identificación Tributaria (RUC / NIT / CIF):</label>
+                <input type="text" id="set-tax-id" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teléfono de Contacto:</label>
+                <input type="text" id="set-phone" class="form-control" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Correo Electrónico:</label>
+                <input type="email" id="set-email" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Dirección Física:</label>
+                <input type="text" id="set-address" class="form-control" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Símbolo de Moneda ($ / € / S/.):</label>
+                <input type="text" id="set-currency" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tasa de Impuesto / IVA (%):</label>
+                <input type="number" id="set-tax-rate" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Aforo Máximo de Personas:</label>
+                <input type="number" id="set-capacity" class="form-control" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Mensaje al Pie del Recibo / Ticket:</label>
+              <input type="text" id="set-ticket-footer" class="form-control" />
+            </div>
+          </div>
+
+          <!-- Backup & Database Management -->
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom: 1.25rem;">
+              <i class="fa-solid fa-database"></i>
+              <span>Base de Datos & Servidor</span>
+            </h3>
+
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+              Todos los datos de socios, pagos, inventario y asistencias se mantienen almacenados y sincronizados. Puedes exportar copias de seguridad completas en formato JSON estándar para restaurarlas en cualquier momento o servidor.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <button class="btn btn-primary" onclick="GymAppInstance.exportBackup()">
+                <i class="fa-solid fa-file-export"></i> Descargar Respaldo Completo (JSON)
+              </button>
+
+              <label class="btn btn-outline" style="cursor: pointer; text-align: center;">
+                <i class="fa-solid fa-file-import"></i> Restaurar Copia de Seguridad
+                <input type="file" accept=".json" style="display: none;" onchange="GymAppInstance.importBackup(this.files[0])" />
+              </label>
+
+              <button class="btn btn-outline" onclick="GymAppInstance.resetDemoData()" style="color: var(--secondary); margin-top: 1rem;">
+                <i class="fa-solid fa-rotate-left"></i> Restaurar Datos de Demostración Iniciales
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODALS SYSTEM
+       ========================================================================== -->
+  
+  <!-- Modal: New / Edit Member -->
+  <div id="modal-member-form" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-user-plus" style="color: var(--primary);"></i>
+          <span id="member-form-title">Nuevo Socio / Registro</span>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="member-edit-id" value="" />
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombres (*):</label>
+            <input type="text" id="m-first-name" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Apellidos (*):</label>
+            <input type="text" id="m-last-name" class="form-control" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cédula / DNI / Pasaporte (*):</label>
+            <input type="text" id="m-dni" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono / WhatsApp (*):</label>
+            <input type="text" id="m-phone" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico:</label>
+            <input type="email" id="m-email" class="form-control" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fecha de Nacimiento:</label>
+            <input type="date" id="m-birthdate" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Género:</label>
+            <select id="m-gender" class="form-select">
+              <option value="M">Masculino</option>
+              <option value="F">Femenino</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dirección Domiciliaria:</label>
+            <input type="text" id="m-address" class="form-control" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Plan / Membresía a Asignar (*):</label>
+            <select id="m-plan" class="form-select"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Entrenador Personal Asignado:</label>
+            <select id="m-trainer" class="form-select"></select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Contacto de Emergencia:</label>
+            <input type="text" id="m-emergency" class="form-control" placeholder="Ej: Mamá (+593 99 123 4567)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Observaciones Médicas / Alergias:</label>
+            <input type="text" id="m-medical" class="form-control" placeholder="Ej: Lesión de rodilla, asma, etc." />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-member-form')">Cancelar</button>
+        <button class="btn btn-primary" onclick="GymAppInstance.saveMember()">
+          <i class="fa-solid fa-check"></i> Guardar y Generar Pase
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Member Full Profile & Details -->
+  <div id="modal-member-details" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-id-badge" style="color: var(--primary);"></i>
+          <span>Ficha Integral del Socio</span>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1.5rem;">
+          <img id="details-member-img" src="" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--primary); object-fit: cover;" />
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <h3 id="details-member-name" style="font-size: 1.4rem; font-weight: 800;">Nombre</h3>
+              <span id="details-status-badge" class="status-badge active">ACTIVO</span>
+            </div>
+            <div id="details-member-sub" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">ID • DNI</div>
+            <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem;">
+              <button id="btn-details-renew" class="btn btn-success btn-sm"><i class="fa-solid fa-arrows-rotate"></i> Renovar Membresía</button>
+              <button id="btn-details-print-pass" class="btn btn-primary btn-sm"><i class="fa-solid fa-id-card"></i> Imprimir Credencial</button>
+              <button id="btn-details-add-meas" class="btn btn-outline btn-sm"><i class="fa-solid fa-weight-scale"></i> Nueva Medida Antropométrica</button>
+            </div>
+          </div>
+          <div id="details-qr-container" style="background: #fff; padding: 6px; border-radius: 8px;"></div>
+        </div>
+
+        <div class="dashboard-grid" style="margin-bottom: 1.25rem;">
+          <div class="card" style="padding: 1rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 0.75rem; color: var(--primary);">Membresía & Estado</h4>
+            <div style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.35rem;">
+              <div><strong>Plan Actual:</strong> <span id="details-plan-name">--</span></div>
+              <div><strong>Fecha de Inicio:</strong> <span id="details-start-date">--</span></div>
+              <div><strong>Fecha de Vencimiento:</strong> <span id="details-end-date" style="color: var(--accent); font-weight: 800;">--</span></div>
+              <div><strong>Entrenador:</strong> <span id="details-trainer">--</span></div>
+              <div><strong>Asistencias Acumuladas:</strong> <span id="details-visits">--</span></div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 1rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 0.75rem; color: var(--primary);">Contacto & Ficha Médica</h4>
+            <div style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.35rem;">
+              <div><strong>Teléfono:</strong> <span id="details-phone">--</span></div>
+              <div><strong>Email:</strong> <span id="details-email">--</span></div>
+              <div><strong>Contacto Emergencia:</strong> <span id="details-emergency">--</span></div>
+              <div><strong>Observaciones Médicas:</strong> <span id="details-medical" style="color: var(--warning);">--</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Anthropometric Measurement History -->
+        <div class="card" style="padding: 1rem;">
+          <h4 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 0.75rem; color: var(--primary);">
+            <i class="fa-solid fa-ruler-combined"></i> Historial de Evolución Física y Medidas
+          </h4>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Peso</th>
+                  <th>% Grasa</th>
+                  <th>Masa Muscular</th>
+                  <th>Perímetros (cm)</th>
+                </tr>
+              </thead>
+              <tbody id="details-meas-table">
+                <!-- Dynamic measurements -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-member-details')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Anthropometric Measurement -->
+  <div id="modal-add-measurement" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-weight-scale" style="color: var(--primary);"></i>
+          <span>Registrar Medida Corporal</span>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="meas-member-id" value="" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Peso (kg) (*):</label>
+            <input type="number" step="0.1" id="meas-weight" class="form-control" placeholder="Ej: 75.5" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">% Grasa Corporal:</label>
+            <input type="number" step="0.1" id="meas-fat" class="form-control" placeholder="Ej: 14.5" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Masa Muscular (kg):</label>
+            <input type="number" step="0.1" id="meas-muscle" class="form-control" placeholder="Ej: 36.2" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pecho (cm):</label>
+            <input type="number" step="0.1" id="meas-chest" class="form-control" placeholder="Ej: 102" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Brazo (cm):</label>
+            <input type="number" step="0.1" id="meas-arms" class="form-control" placeholder="Ej: 38" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cintura (cm):</label>
+            <input type="number" step="0.1" id="meas-waist" class="form-control" placeholder="Ej: 80" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-add-measurement')">Cancelar</button>
+        <button class="btn btn-primary" onclick="GymAppInstance.saveMeasurement()">Guardar Medición</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Expense -->
+  <div id="modal-add-expense" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-circle-minus" style="color: var(--secondary);"></i>
+          <span>Registrar Egreso / Gasto Operativo</span>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Concepto / Descripción (*):</label>
+          <input type="text" id="exp-concept" class="form-control" placeholder="Ej: Compra de toallas y desinfectantes" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Categoría:</label>
+            <select id="exp-category" class="form-select">
+              <option value="Mantenimiento">Mantenimiento de Máquinas</option>
+              <option value="Insumos">Insumos & Limpieza</option>
+              <option value="Servicios">Servicios Básicos (Luz/Agua/Net)</option>
+              <option value="Sueldos">Sueldos & Comisiones</option>
+              <option value="Inventario">Reposición de Stock</option>
+              <option value="Otro">Otro Gasto</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Monto ($) (*):</label>
+            <input type="number" step="0.01" id="exp-amount" class="form-control" placeholder="0.00" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Responsable:</label>
+            <input type="text" id="exp-responsible" class="form-control" placeholder="Ej: Alex Rivera" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Método de Pago:</label>
+            <select id="exp-payment-method" class="form-select">
+              <option value="Efectivo">Efectivo de Caja</option>
+              <option value="Transferencia">Transferencia Bancaria</option>
+              <option value="Tarjeta">Tarjeta de Crédito Gym</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-add-expense')">Cancelar</button>
+        <button class="btn btn-secondary" onclick="GymAppInstance.saveExpense()">Registrar Egreso</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: New / Edit Membership Plan -->
+  <div id="modal-plan-form" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-ticket" style="color: var(--primary);"></i>
+          <span id="plan-form-title">Nuevo Plan / Membresía</span>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="plan-edit-id" value="" />
+
+        <div class="form-group">
+          <label class="form-label">Nombre del Plan (*):</label>
+          <input type="text" id="plan-name" class="form-control" placeholder="Ej: Plan Estudiantes Forza" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Precio ($) (*):</label>
+            <input type="number" step="0.50" id="plan-price" class="form-control" placeholder="30.00" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duración (Días) (*):</label>
+            <input type="number" id="plan-duration" class="form-control" placeholder="30" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Color Distintivo:</label>
+            <select id="plan-color" class="form-select">
+              <option value="#00f2fe">Cian Neón (#00f2fe)</option>
+              <option value="#10b981">Esmeralda (#10b981)</option>
+              <option value="#8b5cf6">Púrpura VIP (#8b5cf6)</option>
+              <option value="#f59e0b">Dorado Titan (#f59e0b)</option>
+              <option value="#ff3366">Rosa Neón (#ff3366)</option>
+            </select>
+          </div>
+          <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem;">
+            <input type="checkbox" id="plan-classes-included" style="width: 18px; height: 18px; accent-color: var(--primary);" checked />
+            <label for="plan-classes-included" style="font-size: 0.85rem; font-weight: 600; cursor: pointer;">¿Incluye Clases Grupales?</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Beneficios incluidos (Uno por línea):</label>
+          <textarea id="plan-benefits" class="form-control" rows="3" placeholder="Acceso libre 6:00 a 22:00&#10;Área de musculación&#10;Lockers VIP"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-plan-form')">Cancelar</button>
+        <button class="btn btn-primary" onclick="GymAppInstance.saveMembershipPlan()">
+          <i class="fa-solid fa-floppy-disk"></i> Guardar Plan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Print Container -->
+  <div id="printable-ticket"></div>
+
+  <!-- Core Scripts -->
+  <script src="js/db.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/qr.js"></script>
+  <script src="js/pdf-ticket.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
