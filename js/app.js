@@ -2055,6 +2055,8 @@ class GymApp {
     const tbody = document.getElementById('users-table-body');
     if (!tbody) return;
 
+    this.renderTrainerProfiles(searchQuery, filterRole);
+
     const q = searchQuery.toLowerCase().trim();
     const filtered = users.filter(u => {
       const matchQuery = !q || 
@@ -2158,7 +2160,79 @@ class GymApp {
         </tr>
       `;
     }).join('');
+
   }
+
+  renderTrainerProfiles(searchQuery = '', roleFilter = 'all') {
+    const tbody = document.getElementById('trainer-profiles-table-body');
+    if (!tbody) return;
+    if (roleFilter !== 'all' && roleFilter !== 'trainer') {
+      tbody.innerHTML = '<tr><td colspan="6" class="trainer-empty-state">Filtra por Entrenadores / Coaches para ver estos perfiles.</td></tr>';
+      return;
+    }
+    const query = String(searchQuery || '').trim().toLowerCase();
+    const trainers = window.GymDB.getStaff().filter(trainer =>
+      !query || [trainer.name, trainer.role, trainer.specialty, trainer.email, trainer.phone, trainer.shift]
+        .some(value => String(value || '').toLowerCase().includes(query))
+    );
+    if (!trainers.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="trainer-empty-state">No hay entrenadores registrados con este criterio.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = trainers.map(trainer => {
+      const id = this.escapePosHtml(trainer.id);
+      return `<tr>
+        <td><strong>${this.escapePosHtml(trainer.name)}</strong></td>
+        <td>${this.escapePosHtml(trainer.role || 'Entrenador')}</td>
+        <td>${this.escapePosHtml(trainer.specialty || 'Sin especialidad registrada')}</td>
+        <td>${this.escapePosHtml(trainer.phone || '—')}<small>${this.escapePosHtml(trainer.email || '')}</small></td>
+        <td>${this.escapePosHtml(trainer.shift || '—')}</td>
+        <td><button class="btn-table-action" title="Editar perfil del entrenador" onclick="GymAppInstance.openTrainerProfileModal('${id}')"><i class="fa-solid fa-pen-to-square"></i></button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  openTrainerProfileModal(trainerId = '') {
+    const trainer = trainerId ? window.GymDB.getStaff().find(item => item.id === trainerId) : null;
+    document.getElementById('trainer-profile-title').textContent = trainer ? 'Editar perfil de entrenador' : 'Registrar entrenador';
+    document.getElementById('trainer-profile-id').value = trainer?.id || '';
+    document.getElementById('trainer-profile-name').value = trainer?.name || '';
+    document.getElementById('trainer-profile-role').value = trainer?.role || '';
+    document.getElementById('trainer-profile-specialty').value = trainer?.specialty || '';
+    document.getElementById('trainer-profile-phone').value = trainer?.phone || '';
+    document.getElementById('trainer-profile-email').value = trainer?.email || '';
+    document.getElementById('trainer-profile-shift').value = trainer?.shift || '';
+    document.getElementById('trainer-profile-avatar').value = trainer?.avatar || '';
+    this.openModal('modal-trainer-profile');
+  }
+
+  saveTrainerProfile() {
+    const trainerId = document.getElementById('trainer-profile-id').value;
+    const name = document.getElementById('trainer-profile-name').value.trim();
+    const role = document.getElementById('trainer-profile-role').value.trim();
+    if (!name || !role) {
+      this.showToast('El nombre y el cargo del entrenador son obligatorios.', 'warning');
+      return;
+    }
+    const updates = {
+      name,
+      role,
+      specialty: document.getElementById('trainer-profile-specialty').value.trim(),
+      phone: document.getElementById('trainer-profile-phone').value.trim(),
+      email: document.getElementById('trainer-profile-email').value.trim(),
+      shift: document.getElementById('trainer-profile-shift').value.trim(),
+      avatar: document.getElementById('trainer-profile-avatar').value.trim()
+    };
+    const saved = trainerId ? window.GymDB.updateStaff(trainerId, updates) : window.GymDB.addStaff(updates);
+    if (!saved) {
+      this.showToast('No se pudo guardar el perfil del entrenador.', 'error');
+      return;
+    }
+    this.closeModal('modal-trainer-profile');
+    this.renderTrainerProfiles(document.getElementById('users-search-input')?.value || '');
+    this.renderMembers();
+    this.renderClasses();
+    this.showToast(trainerId ? 'Perfil del entrenador actualizado.' : 'Entrenador registrado.', 'success');
 
   openNewUserModal() {
     document.getElementById('user-form-title').textContent = "Registrar Empleado / Usuario";

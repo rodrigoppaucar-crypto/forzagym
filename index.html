@@ -495,6 +495,7 @@
             </table>
           </div>
         </div>
+
       </section>
 
       <!-- ==========================================================================
@@ -1235,6 +1236,19 @@
             </table>
           </div>
         </div>
+
+        <div class="card trainer-profiles-card">
+          <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-dumbbell"></i><span>Perfiles de entrenadores</span></div>
+            <button class="btn btn-primary btn-sm" onclick="GymAppInstance.openTrainerProfileModal()"><i class="fa-solid fa-plus"></i> Nuevo entrenador</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead><tr><th>Entrenador</th><th>Cargo</th><th>Especialidad</th><th>Contacto</th><th>Turno</th><th>Acciones</th></tr></thead>
+              <tbody id="trainer-profiles-table-body"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
     </div>
@@ -1243,6 +1257,33 @@
   <!-- ==========================================================================
        MODALS SYSTEM
        ========================================================================== -->
+
+  <div id="modal-trainer-profile" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-dumbbell"></i><span id="trainer-profile-title">Editar entrenador</span></div>
+        <button class="modal-close" onclick="GymAppInstance.closeModal('modal-trainer-profile')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="trainer-profile-id" />
+        <div class="form-group"><label class="form-label">Nombre completo (*):</label><input id="trainer-profile-name" class="form-control" maxlength="100" required /></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Cargo (*):</label><input id="trainer-profile-role" class="form-control" maxlength="100" required /></div>
+          <div class="form-group"><label class="form-label">Turno:</label><input id="trainer-profile-shift" class="form-control" maxlength="80" placeholder="Mañana, tarde o flexible" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Especialidad:</label><textarea id="trainer-profile-specialty" class="form-control" maxlength="240" rows="2"></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Teléfono:</label><input id="trainer-profile-phone" class="form-control" maxlength="40" /></div>
+          <div class="form-group"><label class="form-label">Correo:</label><input id="trainer-profile-email" type="email" class="form-control" maxlength="120" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">URL de foto (opcional):</label><input id="trainer-profile-avatar" type="url" class="form-control" placeholder="https://..." /></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="GymAppInstance.closeModal('modal-trainer-profile')">Cancelar</button>
+        <button class="btn btn-primary" onclick="GymAppInstance.saveTrainerProfile()"><i class="fa-solid fa-floppy-disk"></i> Guardar perfil</button>
+      </div>
+    </div>
+  </div>
   
   <!-- Modal: New / Edit Member -->
   <div id="modal-member-form" class="modal-backdrop">

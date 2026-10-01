@@ -1053,6 +1053,26 @@ class GymDatabase {
     return this.data.staff || [];
   }
 
+  addStaff(staffData) {
+    if (!Array.isArray(this.data.staff)) this.data.staff = [];
+    const nextId = this.data.staff.reduce((max, staff) => {
+      const match = String(staff.id).match(/^STAFF-(\d+)$/);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0) + 1;
+    const newStaff = { id: `STAFF-${nextId}`, ...staffData };
+    this.data.staff.push(newStaff);
+    this.save();
+    return newStaff;
+  }
+
+  updateStaff(staffId, updates) {
+    const staff = this.getStaff().find(member => member.id === staffId);
+    if (!staff) return false;
+    Object.assign(staff, updates);
+    this.save();
+    return staff;
+  }
+
   getClasses() {
     return this.data.classes || [];
   }
