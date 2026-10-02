@@ -541,6 +541,25 @@
           </div>
         </div>
 
+        <div class="card" style="margin-bottom: 1.25rem; border-left: 4px solid var(--accent);">
+          <h3 class="card-title" style="margin-bottom: 0.4rem;"><i class="fa-solid fa-ticket" style="color: var(--accent);"></i> Cobrar pase de visita</h3>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.85rem;">Ingresa el código permanente del plan. Cada cobro se registra como una venta independiente, sin crear socio ni fecha de caducidad.</p>
+          <div class="form-row" style="align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="visit-pass-code">Código del plan</label>
+              <input type="text" id="visit-pass-code" class="form-control" maxlength="20" placeholder="VIS-XXXXXXXX" autocomplete="off" oninput="GymAppInstance.previewVisitPassCode(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();GymAppInstance.chargeVisitPass()}" />
+              <small id="visit-pass-feedback" style="display: block; min-height: 1.2em; margin-top: 4px; color: var(--text-muted);"></small>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="visit-pass-customer">Nombre (opcional)</label>
+              <input type="text" id="visit-pass-customer" class="form-control" maxlength="100" placeholder="Consumidor Final" />
+            </div>
+            <button type="button" id="visit-pass-charge-button" class="btn btn-primary" onclick="GymAppInstance.chargeVisitPass()" disabled style="height: 42px;">
+              <i class="fa-solid fa-cash-register"></i> Cobrar pase
+            </button>
+          </div>
+        </div>
+
         <div class="pos-layout">
           <!-- Products Catalog -->
           <div class="card">
@@ -1725,6 +1744,17 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label style="display: flex; align-items: flex-start; gap: 9px; cursor: pointer; color: var(--text-main);">
+            <input type="checkbox" id="plan-visit-pass" onchange="GymAppInstance.toggleVisitPassPlan(this.checked)" style="margin-top: 3px; accent-color: var(--primary);" />
+            <span><strong>Pase de visita para caja</strong><small style="display: block; color: var(--text-muted); margin-top: 3px;">Genera un código único reutilizable, sin fecha de caducidad. Solo se cobra desde Punto de Venta.</small></span>
+          </label>
+        </div>
+        <div id="plan-visit-pass-code-wrap" class="form-group" hidden>
+          <label class="form-label">Código permanente del plan:</label>
+          <input type="text" id="plan-visit-pass-code" class="form-control" readonly />
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Color Distintivo:</label>
@@ -2046,6 +2076,6 @@
   <script src="js/qr.js?v=session-v2"></script>
   <script src="js/pdf-ticket.js?v=session-v2"></script>
   <script src="js/charts.js"></script>
-  <script src="js/app.js?v=presets-20261002"></script>
+  <script src="js/app.js?v=visit-pass-20261002"></script>
 </body>
 </html>

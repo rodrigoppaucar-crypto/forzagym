@@ -498,7 +498,7 @@ class GymApp {
 
     // Fill Membership Select
     const planSelect = document.getElementById('m-plan');
-    planSelect.innerHTML = window.GymDB.getMemberships().map(p => `
+    planSelect.innerHTML = window.GymDB.getMemberships().filter(p => !p.visitPass).map(p => `
       <option value="${p.id}">${p.name} - $${p.price.toFixed(2)} (${p.durationDays} días)</option>
     `).join('');
 
@@ -531,7 +531,7 @@ class GymApp {
     document.getElementById('m-medical').value = member.medicalNotes || "";
 
     const planSelect = document.getElementById('m-plan');
-    planSelect.innerHTML = window.GymDB.getMemberships().map(p => `
+    planSelect.innerHTML = window.GymDB.getMemberships().filter(p => !p.visitPass || p.id === member.membershipId).map(p => `
       <option value="${p.id}" ${p.id === member.membershipId ? 'selected' : ''}>${p.name} - $${p.price.toFixed(2)}</option>
     `).join('');
 
@@ -564,6 +564,10 @@ class GymApp {
     }
 
     const plan = window.GymDB.getMembershipById(membershipId);
+    if (plan?.visitPass) {
+      this.showToast('Los pases de visita se cobran en Punto de Venta y no se asignan a socios.', 'warning');
+      return;
+    }
     const startDate = new Date().toISOString().split('T')[0];
     const endDateObj = new Date();
     endDateObj.setDate(endDateObj.getDate() + (plan ? plan.durationDays : 30));
@@ -875,7 +879,7 @@ class GymApp {
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
             <h3 style="font-size: 1.25rem; font-weight: 800;">${p.name}</h3>
             <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <span style="font-size: 0.75rem; background: rgba(255,255,255,0.06); padding: 0.25rem 0.6rem; border-radius: var(--radius-full); font-weight: 700;">${p.durationDays} días</span>
+              <span style="font-size: 0.75rem; background: rgba(255,255,255,0.06); padding: 0.25rem 0.6rem; border-radius: var(--radius-full); font-weight: 700;">${p.visitPass ? 'Sin caducidad' : `${p.durationDays} días`}</span>
               <button class="btn btn-outline btn-sm btn-icon" onclick="GymAppInstance.openEditPlanModal('${p.id}')" title="Editar Plan" style="width: 26px; height: 26px; font-size: 0.75rem;">
                 <i class="fa-solid fa-pen"></i>
               </button>
@@ -896,13 +900,53 @@ class GymApp {
               </li>
             `).join('')}
           </ul>
+          ${p.visitPass ? `<div style="padding: 0.75rem; border-radius: var(--radius-sm); background: var(--bg-secondary); margin-bottom: 1rem;"><span style="display:block; font-size:0.75rem; color:var(--text-muted);">Código de uso exclusivo en caja</span><strong style="font-size:1.1rem; letter-spacing:0.08em;">${this.escapeFinanceHtml(p.code || '')}</strong></div>` : ''}
         </div>
 
-        <button class="btn btn-primary" style="width: 100%;" onclick="GymAppInstance.openNewMemberModal()">
-          <i class="fa-solid fa-user-plus"></i> Inscribir con este Plan
-        </button>
+        ${p.visitPass
+          ? '<span class="btn btn-outline" style="width: 100%; justify-content: center; cursor: default;"><i class="fa-solid fa-cash-register"></i> Cobro desde Punto de Venta</span>'
+          : '<button class="btn btn-primary" style="width: 100%;" onclick="GymAppInstance.openNewMemberModal()"><i class="fa-solid fa-user-plus"></i> Inscribir con este Plan</button>'}
       </div>
     `).join('');
+  }
+
+  generateVisitPassCode() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const codeExists = code => window.GymDB.getMemberships().some(plan => plan.visitPass && plan.code === code);
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const bytes = new Uint8Array(8);
+      if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+        window.crypto.getRandomValues(bytes);
+      } else {
+        for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+      }
+      const code = `VIS-${Array.from(bytes, byte => alphabet[byte % alphabet.length]).join('')}`;
+      if (!codeExists(code)) return code;
+    }
+    return null;
+  }
+
+  toggleVisitPassPlan(enabled) {
+    const duration = document.getElementById('plan-duration');
+    const durationGroup = duration?.closest('.form-group');
+    const classOption = document.getElementById('plan-classes-included');
+    const classGroup = classOption?.closest('.form-group');
+    const codeWrap = document.getElementById('plan-visit-pass-code-wrap');
+    const codeField = document.getElementById('plan-visit-pass-code');
+
+    if (duration) {
+      duration.disabled = enabled;
+      duration.required = !enabled;
+      if (enabled) duration.value = '0';
+      else if (Number(duration.value) <= 0) duration.value = '30';
+    }
+    if (durationGroup) durationGroup.hidden = enabled;
+    if (classOption) {
+      classOption.disabled = enabled;
+      if (enabled) classOption.checked = false;
+    }
+    if (classGroup) classGroup.hidden = enabled;
+    if (codeWrap) codeWrap.hidden = !enabled || !codeField?.value;
   }
 
   openNewPlanModal() {
@@ -916,6 +960,9 @@ class GymApp {
     document.getElementById('plan-color').value = "#00f2fe";
     document.getElementById('plan-classes-included').checked = true;
     document.getElementById('plan-benefits').value = "Acceso a sala de musculación\nÁrea de cardio zone\nUso de lockers";
+    document.getElementById('plan-visit-pass').checked = false;
+    document.getElementById('plan-visit-pass-code').value = '';
+    this.toggleVisitPassPlan(false);
     modal.classList.add('show');
   }
 
@@ -933,6 +980,10 @@ class GymApp {
     document.getElementById('plan-color').value = plan.color || "#00f2fe";
     document.getElementById('plan-classes-included').checked = !!plan.classesIncluded;
     document.getElementById('plan-benefits').value = (plan.benefits || []).join('\n');
+    document.getElementById('plan-visit-pass').checked = !!plan.visitPass;
+    document.getElementById('plan-visit-pass-code').value = plan.code || '';
+    this.toggleVisitPassPlan(!!plan.visitPass);
+    document.getElementById('plan-visit-pass-code-wrap').hidden = !plan.visitPass;
     modal.classList.add('show');
   }
 
@@ -940,23 +991,38 @@ class GymApp {
     const editId = document.getElementById('plan-edit-id').value;
     const name = document.getElementById('plan-name').value.trim();
     const price = parseFloat(document.getElementById('plan-price').value) || 0;
-    const durationDays = parseInt(document.getElementById('plan-duration').value) || 30;
+    const visitPass = document.getElementById('plan-visit-pass').checked;
+    const durationDays = visitPass ? 0 : (parseInt(document.getElementById('plan-duration').value) || 30);
     const color = document.getElementById('plan-color').value || '#00f2fe';
-    const classesIncluded = document.getElementById('plan-classes-included').checked;
+    const classesIncluded = visitPass ? false : document.getElementById('plan-classes-included').checked;
     const rawBenefits = document.getElementById('plan-benefits').value.trim();
 
-    if (!name || price <= 0 || durationDays <= 0) {
+    if (!name || !Number.isFinite(price) || price <= 0 || (!visitPass && durationDays <= 0)) {
       this.showToast("Por favor completa el nombre, precio y duración válidos", "warning");
       return;
     }
 
-    const benefits = rawBenefits ? rawBenefits.split('\n').map(b => b.trim()).filter(b => b.length > 0) : ['Acceso general al gimnasio'];
+    const benefits = visitPass
+      ? ['Pase de visita sin fecha de caducidad', 'Código reutilizable de cobro exclusivo para caja']
+      : (rawBenefits ? rawBenefits.split('\n').map(b => b.trim()).filter(b => b.length > 0) : ['Acceso general al gimnasio']);
+    let code = '';
+    if (visitPass) {
+      code = editId
+        ? (window.GymDB.getMembershipById(editId)?.code || this.generateVisitPassCode())
+        : this.generateVisitPassCode();
+      if (!code) {
+        this.showToast('No se pudo generar un código único. Inténtalo nuevamente.', 'error');
+        return;
+      }
+    }
 
     if (editId) {
       window.GymDB.updateMembership(editId, {
         name,
         price,
         durationDays,
+        visitPass,
+        code: visitPass ? code : '',
         color,
         classesIncluded,
         benefits
@@ -967,11 +1033,13 @@ class GymApp {
         name,
         price,
         durationDays,
+        visitPass,
+        code: visitPass ? code : '',
         color,
         classesIncluded,
         benefits
       });
-      this.showToast(`¡Nuevo plan "${name}" creado con éxito!`, "success");
+      this.showToast(visitPass ? `Pase creado. Código permanente de caja: ${code}` : `¡Nuevo plan "${name}" creado con éxito!`, "success");
     }
 
     this.closeModal('modal-plan-form');
@@ -994,6 +1062,67 @@ class GymApp {
     this.posCart = [];
     this.posFilterCategory = 'all';
     this.posSearchQuery = '';
+  }
+
+  previewVisitPassCode(value) {
+    const feedback = document.getElementById('visit-pass-feedback');
+    const button = document.getElementById('visit-pass-charge-button');
+    if (!feedback || !button) return;
+
+    const code = String(value || '').trim().toUpperCase();
+    const plan = window.GymDB.getMemberships().find(item => item.visitPass && item.code === code);
+    this.visitPassPlan = plan || null;
+    button.disabled = !plan;
+    feedback.textContent = plan
+      ? `${plan.name} · Sin caducidad · $${Number(plan.price).toFixed(2)}`
+      : (code ? 'Código no reconocido. Verifica el código del pase.' : 'El pase no tiene fecha de caducidad.');
+    feedback.style.color = plan ? 'var(--accent)' : (code ? 'var(--secondary)' : 'var(--text-muted)');
+  }
+
+  chargeVisitPass() {
+    if (!this.hasPermission('pos')) {
+      this.showToast('Solo el personal con acceso a caja puede cobrar pases de visita.', 'error');
+      return;
+    }
+
+    const codeInput = document.getElementById('visit-pass-code');
+    const customerInput = document.getElementById('visit-pass-customer');
+    const paymentInput = document.getElementById('pos-payment-method');
+    const code = String(codeInput?.value || '').trim().toUpperCase();
+    const plan = window.GymDB.getMemberships().find(item => item.visitPass && item.code === code);
+    const price = Number(plan?.price);
+    if (!plan || !Number.isFinite(price) || price <= 0) {
+      this.previewVisitPassCode(code);
+      this.showToast('Ingresa un código válido de pase de visita.', 'warning');
+      return;
+    }
+
+    const taxRate = Number(window.GymDB.data.settings.taxRate) || 0;
+    const subtotal = Number((price / (1 + taxRate / 100)).toFixed(2));
+    const sale = window.GymDB.recordSale({
+      type: 'visit-pass',
+      customerName: customerInput?.value.trim() || 'Visitante sin registro',
+      cashier: window.GymDB.currentUser?.name || 'Caja',
+      visitPassCode: plan.code,
+      items: [{ name: `${plan.name} · ${plan.code}`, code: plan.code, qty: 1, price, total: price }],
+      subtotal,
+      tax: Number((price - subtotal).toFixed(2)),
+      total: price,
+      paymentMethod: paymentInput?.value || 'Efectivo'
+    });
+
+    if (!sale) {
+      this.showToast('No se pudo registrar el cobro del pase. Inténtalo nuevamente.', 'error');
+      return;
+    }
+
+    GymAudio.playCash();
+    this.showToast(`Pase cobrado: $${price.toFixed(2)} · Código ${plan.code}`, 'success');
+    GymExporter.printReceipt(sale);
+    if (customerInput) customerInput.value = '';
+    if (codeInput) codeInput.value = '';
+    this.previewVisitPassCode('');
+    this.renderFinances();
   }
 
   renderPOS(filterCategory = 'all', searchQuery = '') {
@@ -1722,7 +1851,7 @@ class GymApp {
             <td><strong>${saleId}</strong></td>
             <td>${date}</td>
             <td>${customer}</td>
-            <td><span class="status-badge ${sale.type === 'membership' ? 'active' : 'frozen'}">${sale.type === 'membership' ? 'Membresía' : 'Tienda POS'}</span></td>
+            <td><span class="status-badge ${sale.type === 'membership' || sale.type === 'visit-pass' ? 'active' : 'frozen'}">${sale.type === 'membership' ? 'Membresía' : sale.type === 'visit-pass' ? 'Pase de visita' : 'Tienda POS'}</span></td>
             <td>${paymentMethod}</td>
             <td><strong>$${(Number(sale.total) || 0).toFixed(2)}</strong></td>
             <td class="finance-row-actions">

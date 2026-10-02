@@ -32,12 +32,14 @@
 ### 4. 💳 Planes, Membresías & Promociones
 - Catálogo de planes: Pase Diario VIP, Plan Mensual Estándar, Plan Mensual PRO + Clases, Plan Trimestral Forza, Plan Anual Elite Black.
 - Configuración de tarifas, duración en días y beneficios incluidos.
+- Creación de pases de visita sin vencimiento con código único reutilizable para cobros en caja.
 
 ### 5. 🛒 Punto de Venta (POS) & Control de Tienda / Suplementos
 - Catálogo táctil con categorías: **Suplementos**, **Bebidas**, **Snacks**, **Accesorios & Ropa**.
 - Carrito de compras interactivo con cálculo automático de subtotal, IVA y total.
 - Control de inventario y stock mínimo.
 - Múltiples métodos de pago: Efectivo, Tarjeta de Débito, Crédito, Transferencia.
+- Cobro de visitas puntuales por código del plan; registra cada ingreso como una venta sin crear un socio.
 - **Generador e impresión de Ticket Térmico (80mm)** con datos fiscales del gimnasio.
 
 ### 6. 📅 Clases Grupales & Calendario Semanal
