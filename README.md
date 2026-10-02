@@ -62,6 +62,7 @@
 - Control de ingresos por membresías y ventas de tienda.
 - Registro de egresos y gastos operativos (Mantenimiento de máquinas, insumos, servicios, comisiones).
 - Balance neto en tiempo real y monto en efectivo disponible en gaveta.
+- Reporte imprimible de cierre de caja por rango de fechas, con resumen general, totales por forma de pago y detalle individual de cada venta, sus artículos y cada egreso.
 - Exportación de ventas a CSV.
 
 ### 9. 📱 Portal del Socio (Self-Service)

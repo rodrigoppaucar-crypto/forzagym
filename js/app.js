@@ -2308,6 +2308,15 @@ class GymApp {
 
   renderFinances() {
     const cash = window.GymDB.data.cashRegister;
+    const reportFrom = document.getElementById('cash-report-from');
+    const reportTo = document.getElementById('cash-report-to');
+    if (reportFrom && reportTo && reportFrom.dataset.initialized !== 'true') {
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      reportFrom.value = localDate;
+      reportTo.value = localDate;
+      reportFrom.dataset.initialized = 'true';
+    }
     const sales = window.GymDB.data.sales || [];
     const expenses = window.GymDB.getExpenses();
     const totalIncome = sales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
@@ -2371,6 +2380,43 @@ class GymApp {
         `;
       }).join('');
     }
+  }
+
+  printCashClosingReport() {
+    if (!this.hasPermission('finances')) {
+      this.showToast('No tienes permiso para imprimir el reporte de caja.', 'warning');
+      return;
+    }
+
+    const from = document.getElementById('cash-report-from')?.value || '';
+    const to = document.getElementById('cash-report-to')?.value || '';
+    if (from && to && from > to) {
+      this.showToast('La fecha “Desde” debe ser anterior o igual a “Hasta”.', 'warning');
+      return;
+    }
+
+    const dateOf = entry => String(entry.date || entry.timestamp || '').slice(0, 10);
+    const inDateRange = entry => {
+      const date = dateOf(entry);
+      return (!from || date >= from) && (!to || date <= to);
+    };
+    const sales = (window.GymDB.data.sales || []).filter(inDateRange);
+    const expenses = window.GymDB.getExpenses().filter(inDateRange);
+    const cashRegister = window.GymDB.data.cashRegister || {};
+
+    GymExporter.printCashClosingReport({
+      from,
+      to,
+      sales,
+      expenses,
+      cashRegister: {
+        initialCash: Number(cashRegister.initialCash) || 0,
+        currentCash: Number(cashRegister.currentCash) || 0,
+        isOpen: Boolean(cashRegister.isOpen),
+        openedAt: cashRegister.openedAt || '',
+        closedAt: cashRegister.closedAt || ''
+      }
+    });
   }
 
   openFinanceEntryModal(kind, entryId) {

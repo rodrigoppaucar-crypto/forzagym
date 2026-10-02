@@ -4,6 +4,168 @@
  */
 
 const GymExporter = {
+  printCashClosingReport(report) {
+    const settings = window.GymDB.data.settings;
+    const printableElem = document.getElementById('printable-cash-report');
+    if (!printableElem) {
+      throw new Error('No se encontró el contenedor del reporte imprimible de caja.');
+    }
+
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
+    const amount = value => `${escapeHtml(settings.currency || '$')}${(Number(value) || 0).toFixed(2)}`;
+    const formatDate = value => {
+      if (!value) return '—';
+      const date = String(value).slice(0, 10);
+      const parsed = new Date(`${date}T12:00:00`);
+      return Number.isNaN(parsed.getTime()) ? escapeHtml(value) : parsed.toLocaleDateString('es-EC');
+    };
+    const rangeLabel = report.from || report.to
+      ? `${report.from ? formatDate(report.from) : 'Inicio'} al ${report.to ? formatDate(report.to) : 'Hoy'}`
+      : 'Todo el historial';
+
+    const sales = Array.isArray(report.sales) ? report.sales : [];
+    const expenses = Array.isArray(report.expenses) ? report.expenses : [];
+    const cashRegister = report.cashRegister || {};
+    const totalSales = sales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
+    const totalExpenses = expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+    const cashSales = sales.filter(sale => sale.paymentMethod === 'Efectivo')
+      .reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
+    const cashExpenses = expenses.filter(expense => expense.paymentMethod === 'Efectivo')
+      .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+    const otherSales = totalSales - cashSales;
+    const otherExpenses = totalExpenses - cashExpenses;
+
+    const methods = new Map();
+    sales.forEach(sale => {
+      const method = sale.paymentMethod || 'No especificado';
+      const current = methods.get(method) || { sales: 0, expenses: 0 };
+      current.sales += Number(sale.total) || 0;
+      methods.set(method, current);
+    });
+    expenses.forEach(expense => {
+      const method = expense.paymentMethod || 'No especificado';
+      const current = methods.get(method) || { sales: 0, expenses: 0 };
+      current.expenses += Number(expense.amount) || 0;
+      methods.set(method, current);
+    });
+
+    const methodRows = [...methods.entries()].map(([method, totals]) => `
+      <tr>
+        <td>${escapeHtml(method)}</td>
+        <td class="amount">${amount(totals.sales)}</td>
+        <td class="amount">${amount(totals.expenses)}</td>
+        <td class="amount">${amount(totals.sales - totals.expenses)}</td>
+      </tr>
+    `).join('');
+
+    const saleRows = sales.map(sale => {
+      const items = Array.isArray(sale.items) && sale.items.length
+        ? sale.items.map(item => `
+          <tr class="subrow">
+            <td colspan="3">↳ ${Number(item.qty) || 0} × ${escapeHtml(item.name || 'Artículo')}</td>
+            <td class="amount">${amount(item.total ?? ((Number(item.price) || 0) * (Number(item.qty) || 0)))}</td>
+          </tr>
+        `).join('')
+        : '';
+      const date = String(sale.date || '').slice(0, 16);
+      const saleType = sale.type === 'membership' ? 'Membresía'
+        : sale.type === 'visit-pass' ? 'Pase de visita'
+          : sale.type === 'pos' ? 'Tienda POS' : 'Venta';
+      return `
+        <tr>
+          <td>${escapeHtml(sale.id || '—')}</td>
+          <td>${formatDate(date)}${date.length > 10 ? ` ${escapeHtml(date.slice(11))}` : ''}</td>
+          <td>${escapeHtml(sale.customerName || 'Consumidor Final')}<br><small>${saleType} · ${escapeHtml(sale.paymentMethod || 'No especificado')} · Cajero: ${escapeHtml(sale.cashier || 'No especificado')}</small><br><small>Subtotal: ${amount(sale.subtotal)} · IVA: ${amount(sale.tax)}</small></td>
+          <td class="amount">${amount(sale.total)}</td>
+        </tr>${items}
+      `;
+    }).join('');
+
+    const expenseRows = expenses.map(expense => `
+      <tr>
+        <td>${escapeHtml(expense.id || '—')}</td>
+        <td>${formatDate(expense.date)}</td>
+        <td>${escapeHtml(expense.concept || 'Egreso')}<br><small>${escapeHtml(expense.category || 'Sin categoría')} · ${escapeHtml(expense.paymentMethod || 'No especificado')} · Responsable: ${escapeHtml(expense.responsible || 'No especificado')}</small></td>
+        <td class="amount">−${amount(expense.amount)}</td>
+      </tr>
+    `).join('');
+
+    const cashStatus = cashRegister.isOpen ? 'Caja abierta' : 'Caja cerrada';
+    const openingTime = cashRegister.openedAt ? new Date(cashRegister.openedAt).toLocaleString('es-EC') : 'No registrado';
+    const closingTime = cashRegister.closedAt ? new Date(cashRegister.closedAt).toLocaleString('es-EC') : 'No registrado';
+
+    printableElem.innerHTML = `
+      <header class="cash-report-header">
+        <h1>${escapeHtml(settings.gymName || 'ForzaGym')}</h1>
+        <p>${escapeHtml(settings.slogan || '')}</p>
+        <p>${escapeHtml(settings.taxId || '')} · ${escapeHtml(settings.phone || '')}</p>
+        <p>${escapeHtml(settings.address || '')}</p>
+        <h2>REPORTE DE CIERRE DE CAJA</h2>
+        <p><strong>Periodo:</strong> ${rangeLabel}</p>
+        <p><strong>Impreso:</strong> ${new Date().toLocaleString('es-EC')}</p>
+      </header>
+
+      <section>
+        <h3>Resumen general</h3>
+        <div class="cash-report-summary">
+          <div><span>Ventas (${sales.length})</span><strong>${amount(totalSales)}</strong></div>
+          <div><span>Egresos (${expenses.length})</span><strong>−${amount(totalExpenses)}</strong></div>
+          <div><span>Balance del periodo</span><strong>${amount(totalSales - totalExpenses)}</strong></div>
+          <div><span>Ingresos en efectivo</span><strong>${amount(cashSales)}</strong></div>
+          <div><span>Egresos en efectivo</span><strong>−${amount(cashExpenses)}</strong></div>
+          <div><span>Movimiento neto en efectivo</span><strong>${amount(cashSales - cashExpenses)}</strong></div>
+          <div><span>Otros medios de pago (neto)</span><strong>${amount(otherSales - otherExpenses)}</strong></div>
+          <div><span>Fondo inicial configurado</span><strong>${amount(cashRegister.initialCash)}</strong></div>
+          <div><span>Efectivo registrado actualmente</span><strong>${amount(cashRegister.currentCash)}</strong></div>
+          <div><span>Estado de caja</span><strong>${cashStatus}</strong></div>
+          <div><span>Apertura registrada</span><strong>${escapeHtml(openingTime)}</strong></div>
+          <div><span>Cierre registrado</span><strong>${escapeHtml(closingTime)}</strong></div>
+        </div>
+        <p class="cash-report-note">El efectivo actual y los datos de apertura/cierre son el estado de caja al momento de imprimir; los movimientos se limitan al periodo seleccionado.</p>
+      </section>
+
+      <section>
+        <h3>Totales por forma de pago</h3>
+        <table>
+          <thead><tr><th>Forma de pago</th><th>Ingresos</th><th>Egresos</th><th>Neto</th></tr></thead>
+          <tbody>${methodRows || '<tr><td colspan="4">Sin movimientos en el periodo.</td></tr>'}</tbody>
+        </table>
+      </section>
+
+      <section>
+        <h3>Detalle individual de ventas</h3>
+        <table>
+          <thead><tr><th>Recibo</th><th>Fecha</th><th>Cliente y detalle</th><th>Total</th></tr></thead>
+          <tbody>${saleRows || '<tr><td colspan="4">Sin ventas en el periodo.</td></tr>'}</tbody>
+        </table>
+      </section>
+
+      <section>
+        <h3>Detalle individual de egresos</h3>
+        <table>
+          <thead><tr><th>Referencia</th><th>Fecha</th><th>Concepto, categoría y responsable</th><th>Monto</th></tr></thead>
+          <tbody>${expenseRows || '<tr><td colspan="4">Sin egresos en el periodo.</td></tr>'}</tbody>
+        </table>
+      </section>
+
+      <footer class="cash-report-signatures">
+        <div>____________________________<br>Responsable de caja</div>
+        <div>____________________________<br>Revisión / Administración</div>
+      </footer>
+    `;
+
+    const cleanupPrintMode = () => document.body.classList.remove('printing-cash-report');
+    window.addEventListener('afterprint', cleanupPrintMode, { once: true });
+    document.body.classList.add('printing-cash-report');
+    window.print();
+  },
+
   // Print 80mm Thermal Receipt for Membership or POS Sale
   printReceipt(sale) {
     const settings = window.GymDB.data.settings;
@@ -65,6 +227,9 @@ const GymExporter = {
       </div>
     `;
 
+    const cleanupPrintMode = () => document.body.classList.remove('printing-ticket');
+    window.addEventListener('afterprint', cleanupPrintMode, { once: true });
+    document.body.classList.add('printing-ticket');
     window.print();
   },
 

@@ -1897,6 +1897,36 @@ select:-webkit-autofill {
   margin: 0 0.1rem;
 }
 
+.cash-closing-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+}
+
+.cash-closing-controls h3 {
+  font-size: 1rem;
+}
+
+.cash-closing-controls p {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.cash-closing-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cash-closing-filters .form-group {
+  width: min(100%, 170px);
+  margin: 0;
+}
+
 .finance-delete {
   color: var(--secondary);
 }
@@ -2087,6 +2117,14 @@ select:-webkit-autofill {
 }
 
 @media (max-width: 768px) {
+  .cash-closing-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .cash-closing-filters .form-group {
+    flex: 1 1 140px;
+  }
+
   .sidebar {
     transform: translateX(-100%);
   }
@@ -2126,10 +2164,21 @@ select:-webkit-autofill {
   body * {
     visibility: hidden;
   }
-  #printable-ticket, #printable-ticket * {
+  body.printing-ticket #app,
+  body.printing-ticket #toast-container,
+  body.printing-ticket #printable-cash-report,
+  body.printing-cash-report #app,
+  body.printing-cash-report #toast-container,
+  body.printing-cash-report #printable-ticket {
+    display: none !important;
+  }
+  body.printing-ticket #printable-ticket,
+  body.printing-ticket #printable-ticket *,
+  body.printing-cash-report #printable-cash-report,
+  body.printing-cash-report #printable-cash-report * {
     visibility: visible;
   }
-  #printable-ticket {
+  body.printing-ticket #printable-ticket {
     position: absolute;
     left: 0;
     top: 0;
@@ -2140,5 +2189,108 @@ select:-webkit-autofill {
     color: black;
     font-family: monospace;
     font-size: 11px;
+  }
+
+  body.printing-cash-report #printable-cash-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 8mm;
+    background: #fff;
+    color: #111;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+  }
+
+  body.printing-cash-report #printable-cash-report .cash-report-header {
+    text-align: center;
+    margin-bottom: 7mm;
+  }
+
+  body.printing-cash-report #printable-cash-report h1 {
+    font-size: 19pt;
+    margin: 0 0 2mm;
+  }
+
+  body.printing-cash-report #printable-cash-report h2 {
+    font-size: 14pt;
+    margin: 5mm 0 2mm;
+  }
+
+  body.printing-cash-report #printable-cash-report h3 {
+    font-size: 11pt;
+    margin: 5mm 0 2mm;
+    border-bottom: 1px solid #777;
+    padding-bottom: 1mm;
+  }
+
+  body.printing-cash-report #printable-cash-report p {
+    margin: 1mm 0;
+  }
+
+  body.printing-cash-report #printable-cash-report .cash-report-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5mm 8mm;
+  }
+
+  body.printing-cash-report #printable-cash-report .cash-report-summary > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 4mm;
+    border-bottom: 1px dotted #bbb;
+    padding: 1mm 0;
+  }
+
+  body.printing-cash-report #printable-cash-report .cash-report-note,
+  body.printing-cash-report #printable-cash-report small {
+    font-size: 7.5pt;
+  }
+
+  body.printing-cash-report #printable-cash-report table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 4mm;
+    font-size: 8pt;
+  }
+
+  body.printing-cash-report #printable-cash-report h3,
+  body.printing-cash-report #printable-cash-report tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.printing-cash-report #printable-cash-report th,
+  body.printing-cash-report #printable-cash-report td {
+    border: 1px solid #aaa;
+    padding: 1.5mm;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  body.printing-cash-report #printable-cash-report th {
+    background: #eee !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.printing-cash-report #printable-cash-report .amount {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  body.printing-cash-report #printable-cash-report .subrow td {
+    border-top: 0;
+    color: #444;
+  }
+
+  body.printing-cash-report #printable-cash-report .cash-report-signatures {
+    display: flex;
+    justify-content: space-around;
+    gap: 10mm;
+    margin-top: 18mm;
+    text-align: center;
   }
 }
