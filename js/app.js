@@ -149,6 +149,7 @@ class GymApp {
   hasPermission(module) {
     if (!this.currentUser) this.currentUser = window.GymDB.getCurrentUser();
     if (!this.currentUser) return false;
+    if (module === 'visit-pass') return this.currentUser.status === 'active';
     if (this.currentUser.role === 'admin') return true;
     if (!this.currentUser.permissions || !Array.isArray(this.currentUser.permissions)) return false;
     if (this.currentUser.permissions.includes('all')) return true;
@@ -156,7 +157,7 @@ class GymApp {
   }
 
   getFirstPermittedView() {
-    const modules = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'users', 'member-portal', 'settings'];
+    const modules = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'users', 'member-portal', 'settings', 'visit-pass'];
     for (const mod of modules) {
       if (this.hasPermission(mod)) return mod;
     }
@@ -255,6 +256,7 @@ class GymApp {
       this.accessCameraAutoStartRequested = false;
     }
     if (this.currentView === 'pos' && viewName !== 'pos') this.stopBarcodeCamera();
+    if (this.currentView === 'visit-pass' && viewName !== 'visit-pass') this.stopVisitPassCamera();
 
     this.currentView = viewName;
 
@@ -301,6 +303,9 @@ class GymApp {
         break;
       case 'pos':
         this.renderPOS();
+        break;
+      case 'visit-pass':
+        this.renderVisitPassCheckout();
         break;
       case 'classes':
         this.renderClasses();
@@ -903,11 +908,11 @@ class GymApp {
               </li>
             `).join('')}
           </ul>
-          ${p.visitPass ? `<div style="padding: 0.75rem; border-radius: var(--radius-sm); background: var(--bg-secondary); margin-bottom: 1rem; text-align: center;"><span style="display:block; font-size:0.75rem; color:var(--text-muted);">Código QR permanente · Mostrar al cajero</span><div id="visit-pass-qr-${index}" style="display:flex; justify-content:center; margin:0.5rem auto;"></div><strong style="font-size:1.1rem; letter-spacing:0.08em;">${this.escapeFinanceHtml(p.code || '')}</strong></div>` : ''}
+          ${p.visitPass ? `<div style="padding: 0.75rem; border-radius: var(--radius-sm); background: var(--bg-secondary); margin-bottom: 1rem; text-align: center;"><span style="display:block; font-size:0.75rem; color:var(--text-muted);">QR permanente · Para cualquier trabajador</span><div id="visit-pass-qr-${index}" style="display:flex; justify-content:center; margin:0.5rem auto;"></div><strong style="font-size:1.1rem; letter-spacing:0.08em;">${this.escapeFinanceHtml(p.code || '')}</strong></div>` : ''}
         </div>
 
         ${p.visitPass
-          ? '<span class="btn btn-outline" style="width: 100%; justify-content: center; cursor: default;"><i class="fa-solid fa-cash-register"></i> Cobro desde Punto de Venta</span>'
+          ? '<span class="btn btn-outline" style="width: 100%; justify-content: center; cursor: default;"><i class="fa-solid fa-cash-register"></i> Disponible en Cobrar Pase QR</span>'
           : '<button class="btn btn-primary" style="width: 100%;" onclick="GymAppInstance.openNewMemberModal()"><i class="fa-solid fa-user-plus"></i> Inscribir con este Plan</button>'}
       </div>
     `).join('');
@@ -942,7 +947,11 @@ class GymApp {
     const classGroup = classOption?.closest('.form-group');
     const codeWrap = document.getElementById('plan-visit-pass-code-wrap');
     const codeField = document.getElementById('plan-visit-pass-code');
+    const qrContainer = document.getElementById('plan-visit-pass-qr');
 
+    if (enabled && codeField && !codeField.value) {
+      codeField.value = this.generateVisitPassCode() || '';
+    }
     if (duration) {
       duration.disabled = enabled;
       duration.required = !enabled;
@@ -955,7 +964,13 @@ class GymApp {
       if (enabled) classOption.checked = false;
     }
     if (classGroup) classGroup.hidden = enabled;
-    if (codeWrap) codeWrap.hidden = !enabled || !codeField?.value;
+    if (codeWrap) codeWrap.hidden = !enabled;
+    if (qrContainer) {
+      qrContainer.replaceChildren();
+      if (enabled && codeField?.value) {
+        window.GymQR.generate(qrContainer, codeField.value, { size: 180 });
+      }
+    }
   }
 
   openNewPlanModal() {
@@ -971,6 +986,7 @@ class GymApp {
     document.getElementById('plan-benefits').value = "Acceso a sala de musculación\nÁrea de cardio zone\nUso de lockers";
     document.getElementById('plan-visit-pass').checked = false;
     document.getElementById('plan-visit-pass-code').value = '';
+    document.getElementById('plan-visit-pass-qr').replaceChildren();
     this.toggleVisitPassPlan(false);
     modal.classList.add('show');
   }
@@ -992,7 +1008,6 @@ class GymApp {
     document.getElementById('plan-visit-pass').checked = !!plan.visitPass;
     document.getElementById('plan-visit-pass-code').value = plan.code || '';
     this.toggleVisitPassPlan(!!plan.visitPass);
-    document.getElementById('plan-visit-pass-code-wrap').hidden = !plan.visitPass;
     modal.classList.add('show');
   }
 
@@ -1012,15 +1027,22 @@ class GymApp {
     }
 
     const benefits = visitPass
-      ? ['Pase de visita sin fecha de caducidad', 'Código reutilizable de cobro exclusivo para caja']
+      ? ['Pase de visita sin fecha de caducidad', 'Código QR reutilizable para cobro por cualquier trabajador']
       : (rawBenefits ? rawBenefits.split('\n').map(b => b.trim()).filter(b => b.length > 0) : ['Acceso general al gimnasio']);
     let code = '';
     if (visitPass) {
       code = editId
-        ? (window.GymDB.getMembershipById(editId)?.code || this.generateVisitPassCode())
-        : this.generateVisitPassCode();
+        ? (window.GymDB.getMembershipById(editId)?.code || document.getElementById('plan-visit-pass-code').value || this.generateVisitPassCode())
+        : (document.getElementById('plan-visit-pass-code').value || this.generateVisitPassCode());
       if (!code) {
         this.showToast('No se pudo generar un código único. Inténtalo nuevamente.', 'error');
+        return;
+      }
+      document.getElementById('plan-visit-pass-code').value = code;
+      window.GymQR.generate('plan-visit-pass-qr', code, { size: 180 });
+      const duplicateCode = window.GymDB.getMemberships().some(plan => plan.visitPass && plan.id !== editId && plan.code === code);
+      if (duplicateCode) {
+        this.showToast('El código QR ya pertenece a otro plan. Desactiva y vuelve a activar el pase para generar otro.', 'error');
         return;
       }
     }
@@ -1048,7 +1070,7 @@ class GymApp {
         classesIncluded,
         benefits
       });
-      this.showToast(visitPass ? `Pase creado. Código permanente de caja: ${code}` : `¡Nuevo plan "${name}" creado con éxito!`, "success");
+      this.showToast(visitPass ? `Pase creado. Código QR permanente: ${code}` : `¡Nuevo plan "${name}" creado con éxito!`, "success");
     }
 
     this.closeModal('modal-plan-form');
@@ -1090,6 +1112,20 @@ class GymApp {
     feedback.style.color = plan ? 'var(--accent)' : (code ? 'var(--secondary)' : 'var(--text-muted)');
   }
 
+  isAuthenticatedEmployee() {
+    const user = window.GymDB && window.GymDB.getCurrentUser();
+    return Boolean(user && user.status === 'active');
+  }
+
+  renderVisitPassCheckout() {
+    const codeInput = document.getElementById('visit-pass-code');
+    const customerInput = document.getElementById('visit-pass-customer');
+    if (codeInput) codeInput.value = '';
+    if (customerInput) customerInput.value = '';
+    this.visitPassCameraCharging = false;
+    this.previewVisitPassCode('');
+  }
+
   async toggleVisitPassCamera(printReceipt = false) {
     if (this.visitPassCameraStarting) {
       this.showToast('El lector QR se está iniciando. Espera un momento.', 'info');
@@ -1099,8 +1135,8 @@ class GymApp {
       await this.stopVisitPassCamera();
       return;
     }
-    if (!this.hasPermission('pos')) {
-      this.showToast('Solo el personal con acceso a caja puede cobrar pases de visita.', 'error');
+    if (!this.isAuthenticatedEmployee()) {
+      this.showToast('Inicia sesión con una cuenta activa de trabajador para cobrar pases.', 'error');
       return;
     }
     if (typeof Html5Qrcode === 'undefined') {
@@ -1188,9 +1224,9 @@ class GymApp {
   }
 
   chargeVisitPass(printReceipt = false, fromScan = false) {
-    if (!this.hasPermission('pos')) {
+    if (!this.isAuthenticatedEmployee()) {
       this.visitPassCameraCharging = false;
-      this.showToast('Solo el personal con acceso a caja puede cobrar pases de visita.', 'error');
+      this.showToast('Inicia sesión con una cuenta activa de trabajador para cobrar pases.', 'error');
       return;
     }
     if (this.visitPassCameraCharging && !fromScan) {
@@ -1204,7 +1240,7 @@ class GymApp {
 
     const codeInput = document.getElementById('visit-pass-code');
     const customerInput = document.getElementById('visit-pass-customer');
-    const paymentInput = document.getElementById('pos-payment-method');
+    const paymentInput = document.getElementById('visit-pass-payment-method');
     const code = String(codeInput?.value || '').trim().toUpperCase();
     const plan = window.GymDB.getMemberships().find(item => item.visitPass && item.code === code);
     const price = Number(plan?.price);

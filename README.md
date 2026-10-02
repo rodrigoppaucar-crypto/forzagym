@@ -32,14 +32,15 @@
 ### 4. 💳 Planes, Membresías & Promociones
 - Catálogo de planes: Pase Diario VIP, Plan Mensual Estándar, Plan Mensual PRO + Clases, Plan Trimestral Forza, Plan Anual Elite Black.
 - Configuración de tarifas, duración en días y beneficios incluidos.
-- Creación de pases de visita sin vencimiento con código y QR únicos, reutilizables para cobros en caja.
+- Creación de pases de visita sin vencimiento con código y QR únicos, generados y visibles desde el formulario al crear el plan.
+- Cualquier trabajador autenticado puede abrir **Cobrar Pase QR** sin recibir permisos para el POS general; cada cobro registra trabajador y método de pago.
 
 ### 5. 🛒 Punto de Venta (POS) & Control de Tienda / Suplementos
 - Catálogo táctil con categorías: **Suplementos**, **Bebidas**, **Snacks**, **Accesorios & Ropa**.
 - Carrito de compras interactivo con cálculo automático de subtotal, IVA y total.
 - Control de inventario y stock mínimo.
 - Múltiples métodos de pago: Efectivo, Tarjeta de Débito, Crédito, Transferencia.
-- Cobro automático al escanear el QR de un pase de visita, o ingreso manual de su código. El cajero elige entre cobrar sin imprimir o cobrar e imprimir el recibo.
+- El cobro de pases se realiza desde el módulo independiente **Cobrar Pase QR** mediante escaneo automático o ingreso manual del código. El trabajador elige entre cobrar sin imprimir o cobrar e imprimir el recibo.
 - **Generador e impresión de Ticket Térmico (80mm)** con datos fiscales del gimnasio.
 
 ### 6. 📅 Clases Grupales & Calendario Semanal

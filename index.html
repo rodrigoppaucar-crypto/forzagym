@@ -69,6 +69,11 @@
           <span>Tienda POS & Stock</span>
         </button>
 
+        <button class="nav-item" data-view="visit-pass" data-permission="visit-pass">
+          <i class="fa-solid fa-ticket"></i>
+          <span>Cobrar Pase QR</span>
+        </button>
+
         <button class="nav-item" data-view="classes" data-permission="classes">
           <i class="fa-solid fa-calendar-days"></i>
           <span>Clases & Reservas</span>
@@ -541,43 +546,6 @@
           </div>
         </div>
 
-        <div class="card" style="margin-bottom: 1.25rem; border-left: 4px solid var(--accent);">
-          <h3 class="card-title" style="margin-bottom: 0.4rem;"><i class="fa-solid fa-ticket" style="color: var(--accent);"></i> Cobrar pase de visita</h3>
-          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.85rem;">Escanea el QR que muestra el visitante para registrar el cobro automáticamente, o ingresa el código permanente. El pase no caduca.</p>
-          <div class="form-row" style="align-items: flex-end;">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label" for="visit-pass-code">Código del plan</label>
-              <input type="text" id="visit-pass-code" class="form-control" maxlength="20" placeholder="VIS-XXXXXXXX" autocomplete="off" oninput="GymAppInstance.previewVisitPassCode(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();GymAppInstance.chargeVisitPass(false)}" />
-              <small id="visit-pass-feedback" style="display: block; min-height: 1.2em; margin-top: 4px; color: var(--text-muted);"></small>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label" for="visit-pass-customer">Nombre (opcional)</label>
-              <input type="text" id="visit-pass-customer" class="form-control" maxlength="100" placeholder="Consumidor Final" />
-            </div>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              <button type="button" id="visit-pass-charge-button" class="btn btn-primary" onclick="GymAppInstance.chargeVisitPass(false)" disabled style="height: 42px;">
-                <i class="fa-solid fa-cash-register"></i> Solo cobrar
-              </button>
-              <button type="button" id="visit-pass-charge-print-button" class="btn btn-outline" onclick="GymAppInstance.chargeVisitPass(true)" disabled style="height: 42px;">
-                <i class="fa-solid fa-print"></i> Cobrar e imprimir
-              </button>
-              <button type="button" id="visit-pass-scan-button" class="btn btn-outline" onclick="GymAppInstance.toggleVisitPassCamera(false)" style="height: 42px;">
-                <i class="fa-solid fa-camera"></i> Escanear QR, solo cobrar
-              </button>
-              <button type="button" id="visit-pass-scan-print-button" class="btn btn-outline" onclick="GymAppInstance.toggleVisitPassCamera(true)" style="height: 42px;">
-                <i class="fa-solid fa-camera"></i> Escanear, cobrar e imprimir
-              </button>
-            </div>
-          </div>
-          <div id="visit-pass-camera-wrap" class="barcode-camera-wrap" hidden style="margin-top: 0.75rem;">
-            <div id="visit-pass-camera" class="barcode-camera-viewport"></div>
-            <div class="barcode-camera-footer">
-              <span id="visit-pass-camera-hint">Apunta la cámara al código QR del visitante. Se cobrará al reconocerlo.</span>
-              <button class="btn btn-outline btn-sm" type="button" onclick="GymAppInstance.stopVisitPassCamera()"><i class="fa-solid fa-video-slash"></i> Detener cámara</button>
-            </div>
-          </div>
-        </div>
-
         <div class="pos-layout">
           <!-- Products Catalog -->
           <div class="card">
@@ -653,6 +621,60 @@
               <button class="btn btn-primary" style="width: 100%; margin-top: 0.75rem; padding: 0.85rem;" onclick="GymAppInstance.checkoutPOS()">
                 <i class="fa-solid fa-receipt"></i> Cobrar e Imprimir Ticket
               </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-visit-pass" class="view-container">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h2>Cobrar Pase de Visita</h2>
+            <p>Disponible para todo el personal autenticado. Escanea el QR del plan o escribe su código permanente.</p>
+          </div>
+        </div>
+        <div class="card" style="max-width: 980px; border-left: 4px solid var(--accent);">
+          <h3 class="card-title" style="margin-bottom: 0.4rem;"><i class="fa-solid fa-ticket" style="color: var(--accent);"></i> Cobro de pase sin vencimiento</h3>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.85rem;">Cada cobro se registra con el trabajador que lo realizó. Escanear el QR cobra de inmediato según la opción seleccionada.</p>
+          <div class="form-row" style="align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="visit-pass-code">Código del plan</label>
+              <input type="text" id="visit-pass-code" class="form-control" maxlength="20" placeholder="VIS-XXXXXXXX" autocomplete="off" oninput="GymAppInstance.previewVisitPassCode(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();GymAppInstance.chargeVisitPass(false)}" />
+              <small id="visit-pass-feedback" style="display: block; min-height: 1.2em; margin-top: 4px; color: var(--text-muted);"></small>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="visit-pass-customer">Nombre (opcional)</label>
+              <input type="text" id="visit-pass-customer" class="form-control" maxlength="100" placeholder="Consumidor Final" />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="visit-pass-payment-method">Método de pago</label>
+              <select id="visit-pass-payment-method" class="form-select">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Tarjeta Débito">Tarjeta Débito</option>
+                <option value="Tarjeta Crédito">Tarjeta Crédito</option>
+                <option value="Transferencia">Transferencia</option>
+              </select>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <button type="button" id="visit-pass-charge-button" class="btn btn-primary" onclick="GymAppInstance.chargeVisitPass(false)" disabled style="height: 42px;">
+                <i class="fa-solid fa-cash-register"></i> Solo cobrar
+              </button>
+              <button type="button" id="visit-pass-charge-print-button" class="btn btn-outline" onclick="GymAppInstance.chargeVisitPass(true)" disabled style="height: 42px;">
+                <i class="fa-solid fa-print"></i> Cobrar e imprimir
+              </button>
+              <button type="button" id="visit-pass-scan-button" class="btn btn-outline" onclick="GymAppInstance.toggleVisitPassCamera(false)" style="height: 42px;">
+                <i class="fa-solid fa-camera"></i> Escanear QR, solo cobrar
+              </button>
+              <button type="button" id="visit-pass-scan-print-button" class="btn btn-outline" onclick="GymAppInstance.toggleVisitPassCamera(true)" style="height: 42px;">
+                <i class="fa-solid fa-camera"></i> Escanear, cobrar e imprimir
+              </button>
+            </div>
+          </div>
+          <div id="visit-pass-camera-wrap" class="barcode-camera-wrap" hidden style="margin-top: 0.75rem;">
+            <div id="visit-pass-camera" class="barcode-camera-viewport"></div>
+            <div class="barcode-camera-footer">
+              <span id="visit-pass-camera-hint">Apunta la cámara al código QR del visitante. Se cobrará al reconocerlo.</span>
+              <button class="btn btn-outline btn-sm" type="button" onclick="GymAppInstance.stopVisitPassCamera()"><i class="fa-solid fa-video-slash"></i> Detener cámara</button>
             </div>
           </div>
         </div>
@@ -1765,12 +1787,14 @@
         <div class="form-group">
           <label style="display: flex; align-items: flex-start; gap: 9px; cursor: pointer; color: var(--text-main);">
             <input type="checkbox" id="plan-visit-pass" onchange="GymAppInstance.toggleVisitPassPlan(this.checked)" style="margin-top: 3px; accent-color: var(--primary);" />
-            <span><strong>Pase de visita para caja</strong><small style="display: block; color: var(--text-muted); margin-top: 3px;">Genera un código único reutilizable, sin fecha de caducidad. Solo se cobra desde Punto de Venta.</small></span>
+            <span><strong>Pase de visita con QR</strong><small style="display: block; color: var(--text-muted); margin-top: 3px;">Genera un código único reutilizable y sin fecha de caducidad. Cualquier trabajador autenticado puede cobrarlo.</small></span>
           </label>
         </div>
         <div id="plan-visit-pass-code-wrap" class="form-group" hidden>
-          <label class="form-label">Código permanente del plan:</label>
+          <label class="form-label">Código QR permanente del plan:</label>
+          <div id="plan-visit-pass-qr" style="display: flex; justify-content: center; margin: 0.5rem 0;"></div>
           <input type="text" id="plan-visit-pass-code" class="form-control" readonly />
+          <small style="display: block; color: var(--text-muted); margin-top: 4px;">Este QR queda guardado con el plan y puede usarlo cualquier trabajador autenticado desde “Cobrar Pase QR”.</small>
         </div>
 
         <div class="form-row">
@@ -2094,6 +2118,6 @@
   <script src="js/qr.js?v=session-v2"></script>
   <script src="js/pdf-ticket.js?v=session-v2"></script>
   <script src="js/charts.js"></script>
-  <script src="js/app.js?v=visit-pass-qr-auto-v2"></script>
+  <script src="js/app.js?v=visit-pass-worker-v3"></script>
 </body>
 </html>
