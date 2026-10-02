@@ -259,6 +259,188 @@ const GymExporter = {
     printWin.document.close();
   },
 
+  printVisitPassCard(plan) {
+    if (!plan || !plan.code) {
+      alert('No hay un código QR válido para imprimir.');
+      return;
+    }
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
+    const settings = window.GymDB.data.settings;
+    const qrCanvas = window.GymQR.generateCanvas(String(plan.code), { size: 720 });
+    const qrImage = qrCanvas.toDataURL('image/png');
+    const printWin = window.open('', '_blank', 'width=600,height=450');
+    if (!printWin) {
+      alert('Por favor permite ventanas emergentes para imprimir la tarjeta QR.');
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tarjeta QR - ${escapeHtml(plan.name)}</title>
+        <style>
+          * { box-sizing: border-box; }
+          @page { size: 100mm 70mm; margin: 0; }
+          html, body {
+            width: 100%;
+            min-height: 100%;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #172331;
+            background: #eef2f6;
+          }
+          body {
+            min-height: 70mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8mm;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .pass-card {
+            width: 86mm;
+            height: 54mm;
+            padding: 4mm;
+            display: flex;
+            flex-direction: column;
+            border: 0.5mm solid #cbd5df;
+            border-top: 2mm solid #16866d;
+            border-radius: 3mm;
+            background: #fff;
+            box-shadow: 0 2mm 6mm rgba(15, 23, 42, 0.12);
+          }
+          .brand {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 2mm;
+            padding-bottom: 2mm;
+            border-bottom: 0.3mm solid #dce3e9;
+          }
+          .gym-name {
+            color: #153d35;
+            font-size: 11pt;
+            font-weight: 900;
+            letter-spacing: 0.4mm;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .tag {
+            color: #334155;
+            font-size: 6.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+          }
+          .content {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 3mm;
+            padding-top: 2mm;
+          }
+          .details { min-width: 0; }
+          .plan-label {
+            margin-bottom: 1mm;
+            color: #475569;
+            font-size: 6.5pt;
+            font-weight: 700;
+            letter-spacing: 0.2mm;
+            text-transform: uppercase;
+          }
+          .plan-name {
+            margin: 0 0 2mm;
+            color: #111827;
+            font-size: 10pt;
+            font-weight: 800;
+            line-height: 1.15;
+            overflow-wrap: anywhere;
+          }
+          .price {
+            margin-bottom: 2mm;
+            color: #145c4e;
+            font-size: 12pt;
+            font-weight: 900;
+          }
+          .code {
+            color: #172331;
+            font: 700 8pt/1.2 Consolas, 'Courier New', monospace;
+            letter-spacing: 0.3mm;
+          }
+          .permanent {
+            margin-top: 1mm;
+            color: #475569;
+            font-size: 6.5pt;
+          }
+          .qr-frame {
+            width: 34mm;
+            height: 34mm;
+            flex: 0 0 34mm;
+            display: grid;
+            place-items: center;
+            padding: 1mm;
+            border: 0.3mm solid #d1d5db;
+            background: #fff;
+          }
+          .qr-frame img { display: block; width: 100%; height: 100%; }
+          .footer {
+            padding-top: 1.5mm;
+            border-top: 0.3mm solid #dce3e9;
+            color: #334155;
+            font-size: 6pt;
+            font-weight: 600;
+            text-align: center;
+          }
+          @media print {
+            html, body { width: 100mm; height: 70mm; background: #fff; }
+            body { min-height: 0; padding: 0; }
+            .pass-card { flex: 0 0 86mm; box-shadow: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <main class="pass-card">
+          <header class="brand">
+            <span class="gym-name">${escapeHtml(settings.gymName || 'ForzaGym')}</span>
+            <span class="tag">Pase de visita</span>
+          </header>
+          <section class="content">
+            <div class="details">
+              <div class="plan-label">Plan permanente</div>
+              <h1 class="plan-name">${escapeHtml(plan.name)}</h1>
+              <div class="price">${escapeHtml(settings.currency || '$')}${Number(plan.price).toFixed(2)}</div>
+              <div class="code">${escapeHtml(plan.code)}</div>
+              <div class="permanent">Sin fecha de caducidad</div>
+            </div>
+            <div class="qr-frame"><img src="${qrImage}" alt="Código QR del pase" /></div>
+          </section>
+          <footer class="footer">Presenta este QR en recepción para registrar tu visita</footer>
+        </main>
+        <script>
+          const qrImage = document.querySelector('.qr-frame img');
+          const printWhenReady = () => setTimeout(() => window.print(), 250);
+          if (qrImage.complete) printWhenReady();
+          else qrImage.addEventListener('load', printWhenReady, { once: true });
+        <\/script>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
+  },
+
   // Export any array of objects to CSV
   exportToCSV(filename, rows) {
     if (!rows || !rows.length) {

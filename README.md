@@ -28,11 +28,13 @@
 - Impresión en 1 clic de carnet de socio en formato tarjeta.
 - Renovación rápida de membresías con cálculo automático de nuevas fechas de vencimiento.
 - Filtros por estado (*Todos, Activos, Vencidos, Congelados*).
+- Credencial QR del portal socio con diseño claro, texto oscuro y distribución adaptable a móvil.
 
 ### 4. 💳 Planes, Membresías & Promociones
 - Catálogo de planes: Pase Diario VIP, Plan Mensual Estándar, Plan Mensual PRO + Clases, Plan Trimestral Forza, Plan Anual Elite Black.
 - Configuración de tarifas, duración en días y beneficios incluidos.
 - Creación de pases de visita sin vencimiento con código y QR únicos, generados y visibles desde el formulario al crear el plan.
+- Impresión del pase QR como tarjeta horizontal de tamaño estándar para recortar y plastificar.
 - Cualquier trabajador autenticado puede abrir **Cobrar Pase QR** sin recibir permisos para el POS general; cada cobro registra trabajador y método de pago.
 
 ### 5. 🛒 Punto de Venta (POS) & Control de Tienda / Suplementos

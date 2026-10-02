@@ -912,7 +912,7 @@ class GymApp {
         </div>
 
         ${p.visitPass
-          ? '<span class="btn btn-outline" style="width: 100%; justify-content: center; cursor: default;"><i class="fa-solid fa-cash-register"></i> Disponible en Cobrar Pase QR</span>'
+          ? `<div style="display: grid; gap: 0.5rem;"><button class="btn btn-outline" style="width: 100%;" onclick="GymAppInstance.printSavedVisitPassCard('${p.id}')"><i class="fa-solid fa-print"></i> Imprimir tarjeta QR</button><span class="btn btn-outline" style="width: 100%; justify-content: center; cursor: default;"><i class="fa-solid fa-cash-register"></i> Disponible en Cobrar Pase QR</span></div>`
           : '<button class="btn btn-primary" style="width: 100%;" onclick="GymAppInstance.openNewMemberModal()"><i class="fa-solid fa-user-plus"></i> Inscribir con este Plan</button>'}
       </div>
     `).join('');
@@ -971,6 +971,26 @@ class GymApp {
         window.GymQR.generate(qrContainer, codeField.value, { size: 180 });
       }
     }
+  }
+
+  printVisitPassCard() {
+    const code = document.getElementById('plan-visit-pass-code')?.value.trim();
+    const name = document.getElementById('plan-name')?.value.trim();
+    const price = Number(document.getElementById('plan-price')?.value);
+    if (!code || !name || !Number.isFinite(price) || price <= 0) {
+      this.showToast('Completa el nombre y precio del pase antes de imprimir la tarjeta QR.', 'warning');
+      return;
+    }
+    window.GymExporter.printVisitPassCard({ name, price, code });
+  }
+
+  printSavedVisitPassCard(planId) {
+    const plan = window.GymDB.getMembershipById(planId);
+    if (!plan || !plan.visitPass) {
+      this.showToast('No se encontró el pase QR que deseas imprimir.', 'error');
+      return;
+    }
+    window.GymExporter.printVisitPassCard(plan);
   }
 
   openNewPlanModal() {

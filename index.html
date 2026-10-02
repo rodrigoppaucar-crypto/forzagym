@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=presets-20261002" />
+  <link rel="stylesheet" href="css/style.css?v=member-card-contrast-v1" />
 </head>
 <body>
 
@@ -992,26 +992,26 @@
           <!-- Digital Pass Card -->
           <div style="display: flex; justify-content: center;">
             <div class="digital-pass-card">
-              <div style="text-align: center;">
-                <div style="font-size: 1.15rem; font-weight: 900; color: var(--primary);">FORZAGYM</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Pallatanga - Pase Virtual</div>
+              <div class="digital-pass-brand">
+                <div class="digital-pass-logo">FORZAGYM</div>
+                <div class="digital-pass-subtitle">Pallatanga · Credencial de socio</div>
               </div>
 
-              <div style="text-align: center;">
-                <img id="portal-member-img" src="" alt="Socio" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--primary); object-fit: cover; margin-bottom: 0.5rem;" />
-                <h3 id="portal-member-name" style="font-size: 1.15rem; font-weight: 800;">Nombre Socio</h3>
-                <span id="portal-plan-name" style="font-size: 0.82rem; color: var(--primary); font-weight: 700;">Plan Mensual PRO</span>
+              <div class="digital-pass-member">
+                <img id="portal-member-img" src="" alt="Foto del socio" />
+                <h3 id="portal-member-name">Nombre Socio</h3>
+                <span id="portal-plan-name">Plan Mensual PRO</span>
               </div>
 
               <div class="pass-qr-box" id="portal-qr-card"></div>
 
-              <div style="width: 100%; display: flex; justify-content: space-between; font-size: 0.78rem; background: rgba(255,255,255,0.06); padding: 0.6rem; border-radius: var(--radius-md);">
-                <div>
-                  <div style="color: var(--text-dim); font-size: 0.68rem;">VENCE:</div>
+              <div class="digital-pass-meta">
+                <div class="digital-pass-meta-item">
+                  <div class="digital-pass-meta-label">Vence</div>
                   <strong id="portal-end-date">2026-10-01</strong>
                 </div>
-                <div style="text-align: right;">
-                  <div style="color: var(--text-dim); font-size: 0.68rem;">ESTADO:</div>
+                <div class="digital-pass-meta-item digital-pass-meta-status">
+                  <div class="digital-pass-meta-label">Estado</div>
                   <span id="portal-status-badge" class="status-badge active">ACTIVO</span>
                 </div>
               </div>
@@ -1794,6 +1794,9 @@
           <label class="form-label">Código QR permanente del plan:</label>
           <div id="plan-visit-pass-qr" style="display: flex; justify-content: center; margin: 0.5rem 0;"></div>
           <input type="text" id="plan-visit-pass-code" class="form-control" readonly />
+          <button type="button" id="plan-visit-pass-print" class="btn btn-outline" onclick="GymAppInstance.printVisitPassCard()" style="width: 100%; margin-top: 0.65rem;">
+            <i class="fa-solid fa-print"></i> Imprimir tarjeta QR
+          </button>
           <small style="display: block; color: var(--text-muted); margin-top: 4px;">Este QR queda guardado con el plan y puede usarlo cualquier trabajador autenticado desde “Cobrar Pase QR”.</small>
         </div>
 
@@ -2116,8 +2119,8 @@
   <script src="js/audio.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="js/qr.js?v=session-v2"></script>
-  <script src="js/pdf-ticket.js?v=session-v2"></script>
+  <script src="js/pdf-ticket.js?v=visit-pass-print-v1"></script>
   <script src="js/charts.js"></script>
-  <script src="js/app.js?v=visit-pass-worker-v3"></script>
+  <script src="js/app.js?v=visit-pass-print-v4"></script>
 </body>
 </html>
