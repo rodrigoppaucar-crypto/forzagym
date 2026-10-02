@@ -63,6 +63,7 @@
 
 ### 10. ⚙️ Configuración & Respaldos (Backup)
 - Personalización de Nombre del Gimnasio, RUC/NIT, Slogan, Teléfono, Dirección, Moneda y Tasa de IVA.
+- Tres interfaces predefinidas: Forza Pro (recomendada), Titanio Oscuro e Impulso Verde.
 - Descarga de **Copia de Seguridad completa en JSON**.
 - Restauración de copias de seguridad con 1 clic.
 - Opción para recargar datos de demostración realistas.

@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=20261002-44f8fa5" />
+  <link rel="stylesheet" href="css/style.css?v=presets-20261002" />
 </head>
 <body>
 
@@ -1054,55 +1054,46 @@
             </div>
 
             <div class="form-group" style="margin-top: 1rem;">
-              <label class="form-label">Personalización visual del sistema:</label>
-              <div style="display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 12px; margin-top: 0.5rem;">
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Primario
-                  <input type="color" id="set-theme-primary" value="#d15252" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+              <label class="form-label">Interfaz y colores:</label>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0.25rem 0 0.75rem;">
+                Elige una de las tres paletas listas. La recomendada para ForzaGym está seleccionada por defecto.
+              </p>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
+                <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); cursor: pointer;">
+                  <input type="radio" name="set-theme-preset" value="forza-pro" onchange="GymAppInstance.previewThemePreset(this.value)" style="margin-top: 3px; accent-color: var(--primary);" />
+                  <span>
+                    <strong style="display: block; color: var(--text-main);">Forza Pro <span style="color: var(--accent); font-size: 0.72rem;">RECOMENDADA</span></strong>
+                    <span style="display: block; color: var(--text-muted); font-size: 0.78rem; margin: 3px 0 9px;">Clara, profesional y alineada con la marca.</span>
+                    <span aria-hidden="true" style="display: flex; gap: 5px;">
+                      <span style="width: 19px; height: 19px; border-radius: 50%; background: #c94b4b;"></span>
+                      <span style="width: 19px; height: 19px; border-radius: 50%; background: #f4f0ee; border: 1px solid #e6dcda;"></span>
+                      <span style="width: 19px; height: 19px; border-radius: 50%; background: #292321;"></span>
+                    </span>
+                  </span>
                 </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Secundario
-                  <input type="color" id="set-theme-secondary" value="#1d1d1d" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); cursor: pointer;">
+                  <input type="radio" name="set-theme-preset" value="titanio-oscuro" onchange="GymAppInstance.previewThemePreset(this.value)" style="margin-top: 3px; accent-color: var(--primary);" />
+                  <span>
+                    <strong style="display: block; color: var(--text-main);">Titanio Oscuro</strong>
+                    <span style="display: block; color: var(--text-muted); font-size: 0.78rem; margin: 3px 0 9px;">Oscura, deportiva y cómoda para baja luz.</span>
+                    <span aria-hidden="true" style="display: flex; gap: 5px;">
+                      <span style="width: 19px; height: 19px; border-radius: 50%; background: #ef5350;"></span>
+                      <span style="width: 19px; height: 19px; border-radius: 50%; background: #0b1220;"></span>
+                      <span style="width: 19px; height: 19px; border-radius: 50%; background: #f59e0b;"></span>
+                    </span>
+                  </span>
                 </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Acento
-                  <input type="color" id="set-theme-accent" value="#9c6a63" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Fondo
-                  <input type="color" id="set-theme-background" value="#0a0e17" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Fondo 2
-                  <input type="color" id="set-theme-background-secondary" value="#101827" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Tarjeta
-                  <input type="color" id="set-theme-card" value="#ffffff" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Borde
-                  <input type="color" id="set-theme-border" value="#b6b8be" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Texto
-                  <input type="color" id="set-theme-text-main" value="#f3f4f6" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Muted
-                  <input type="color" id="set-theme-text-muted" value="#a9b1c3" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Dim
-                  <input type="color" id="set-theme-text-dim" value="#7d6e6a" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Advert.
-                  <input type="color" id="set-theme-warning" value="#d8a35d" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
-                </label>
-                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                  Púrpura
-                  <input type="color" id="set-theme-purple" value="#8f6c69" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                <label style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); cursor: pointer;">
+                  <input type="radio" name="set-theme-preset" value="impulso-verde" onchange="GymAppInstance.previewThemePreset(this.value)" style="margin-top: 3px; accent-color: var(--primary);" />
+                  <span>
+                    <strong style="display: block; color: var(--text-main);">Impulso Verde</strong>
+                    <span style="display: block; color: var(--text-muted); font-size: 0.78rem; margin: 3px 0 9px;">Fresca y energética, con acentos naturales.</span>
+                    <span aria-hidden="true" style="display: flex; gap: 5px;">
+                      <span style="width: 19px; height: 19px; border-radius: 50%; background: #14866d;"></span>
+                      <span style="width: 19px; height: 19px; border-radius: 50%; background: #f0f7f4; border: 1px solid #cfe0d8;"></span>
+                      <span style="width: 19px; height: 19px; border-radius: 50%; background: #e5a93d;"></span>
+                    </span>
+                  </span>
                 </label>
               </div>
             </div>
@@ -2048,13 +2039,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 
   <!-- Core Scripts -->
-  <script src="js/firebase-sync.js?v=20261002-44f8fa5"></script>
-  <script src="js/db.js?v=20261002-44f8fa5"></script>
+  <script src="js/firebase-sync.js?v=presets-20261002"></script>
+  <script src="js/db.js?v=presets-20261002"></script>
   <script src="js/audio.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="js/qr.js?v=session-v2"></script>
   <script src="js/pdf-ticket.js?v=session-v2"></script>
   <script src="js/charts.js"></script>
-  <script src="js/app.js?v=20261002-44f8fa5"></script>
+  <script src="js/app.js?v=presets-20261002"></script>
 </body>
 </html>

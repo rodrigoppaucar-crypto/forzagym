@@ -17,20 +17,7 @@ const INITIAL_DATA = {
     taxRate: 15,
     maxCapacity: 120,
     ticketFooter: "¡Gracias por entrenar con nosotros! Rompe tus límites en ForzaGym.",
-    theme: {
-      primary: "#d15252",
-      secondary: "#1d1d1d",
-      accent: "#9c6a63",
-      background: "#0a0e17",
-      backgroundSecondary: "#101827",
-      card: "#ffffff",
-      border: "#cbd5e1",
-      textMain: "#f3f4f6",
-      textMuted: "#a9b1c3",
-      textDim: "#7d6e6a",
-      warning: "#d8a35d",
-      purple: "#8f6c69"
-    }
+    theme: { preset: "forza-pro" }
   },
   cashRegister: {
     isOpen: true,

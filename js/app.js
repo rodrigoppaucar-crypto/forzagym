@@ -3,6 +3,54 @@
  * Comprehensive UI Controller, Views Router, Modals & Business Logic
  */
 
+const THEME_PRESETS = {
+  'forza-pro': {
+    primary: '#c94b4b',
+    primaryHover: '#ad3939',
+    secondary: '#292321',
+    accent: '#ab6c54',
+    background: '#f4f0ee',
+    backgroundSecondary: '#fffdfc',
+    card: '#ffffff',
+    border: '#e6dcda',
+    textMain: '#241e1c',
+    textMuted: '#625957',
+    textDim: '#817572',
+    warning: '#b7791f',
+    purple: '#7657a5'
+  },
+  'titanio-oscuro': {
+    primary: '#ef5350',
+    primaryHover: '#d93f3c',
+    secondary: '#070b14',
+    accent: '#f59e0b',
+    background: '#0b1220',
+    backgroundSecondary: '#101a2a',
+    card: '#162235',
+    border: '#2d3b50',
+    textMain: '#f3f4f6',
+    textMuted: '#b6c2d2',
+    textDim: '#8391a5',
+    warning: '#fbbf24',
+    purple: '#a78bfa'
+  },
+  'impulso-verde': {
+    primary: '#14866d',
+    primaryHover: '#0f6e59',
+    secondary: '#12342e',
+    accent: '#e5a93d',
+    background: '#f0f7f4',
+    backgroundSecondary: '#e7f1ed',
+    card: '#ffffff',
+    border: '#cfe0d8',
+    textMain: '#18332c',
+    textMuted: '#4b665d',
+    textDim: '#668076',
+    warning: '#b7791f',
+    purple: '#7756a8'
+  }
+};
+
 class GymApp {
   constructor() {
     this.currentView = 'dashboard';
@@ -56,64 +104,38 @@ class GymApp {
     }
   }
 
-  normalizeThemeColor(value, fallback) {
-    if (!value || typeof value !== 'string') return fallback;
-
-    const trimmed = value.trim();
-    if (/^#[0-9a-fA-F]{3,8}$/.test(trimmed)) {
-      return trimmed;
-    }
-
-    const rgbMatch = trimmed.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+))?\s*\)$/i);
-    if (rgbMatch) {
-      const [, r, g, b] = rgbMatch;
-      const toHex = (n) => Number(n).toString(16).padStart(2, '0');
-      return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toLowerCase();
-    }
-
-    return fallback;
+  previewThemePreset(presetId) {
+    this.applyThemeFromSettings(presetId);
   }
 
-  applyThemeFromSettings() {
+  applyThemeFromSettings(presetId = null) {
     const settings = window.GymDB && window.GymDB.data ? window.GymDB.data.settings : null;
-    const theme = settings && settings.theme ? settings.theme : {};
+    const selectedPreset = presetId || (settings && settings.theme && settings.theme.preset) || 'forza-pro';
+    const theme = THEME_PRESETS[selectedPreset] || THEME_PRESETS['forza-pro'];
     const root = document.documentElement;
-    const colors = {
-      primary: this.normalizeThemeColor(theme.primary, '#d15252'),
-      secondary: this.normalizeThemeColor(theme.secondary, '#1d1d1d'),
-      accent: this.normalizeThemeColor(theme.accent, '#9c6a63'),
-      background: this.normalizeThemeColor(theme.background, '#0a0e17'),
-      backgroundSecondary: this.normalizeThemeColor(theme.backgroundSecondary, '#101827'),
-      card: this.normalizeThemeColor(theme.card, '#ffffff'),
-      border: this.normalizeThemeColor(theme.border, '#cbd5e1'),
-      textMain: this.normalizeThemeColor(theme.textMain, '#f3f4f6'),
-      textMuted: this.normalizeThemeColor(theme.textMuted, '#a9b1c3'),
-      textDim: this.normalizeThemeColor(theme.textDim, '#7d6e6a'),
-      warning: this.normalizeThemeColor(theme.warning, '#d8a35d'),
-      purple: this.normalizeThemeColor(theme.purple, '#8f6c69')
-    };
 
-    root.style.setProperty('--primary', colors.primary);
-    root.style.setProperty('--primary-glow', `${colors.primary}26`);
-    root.style.setProperty('--secondary', colors.secondary);
-    root.style.setProperty('--secondary-glow', `${colors.secondary}20`);
-    root.style.setProperty('--accent', colors.accent);
-    root.style.setProperty('--accent-glow', `${colors.accent}1a`);
-    root.style.setProperty('--warning', colors.warning);
-    root.style.setProperty('--warning-glow', `${colors.warning}1a`);
-    root.style.setProperty('--purple', colors.purple);
-    root.style.setProperty('--purple-glow', `${colors.purple}1a`);
-    root.style.setProperty('--bg-primary', colors.background);
-    root.style.setProperty('--bg-secondary', colors.backgroundSecondary);
-    root.style.setProperty('--bg-tertiary', colors.background === '#0a0e17' ? '#171d2d' : '#f0e7e4');
-    root.style.setProperty('--bg-card', colors.card);
-    root.style.setProperty('--bg-card-hover', colors.card);
-    root.style.setProperty('--bg-glass', colors.card);
-    root.style.setProperty('--border-color', colors.border);
-    root.style.setProperty('--border-highlight', `${colors.primary}55`);
-    root.style.setProperty('--text-main', colors.textMain);
-    root.style.setProperty('--text-muted', colors.textMuted);
-    root.style.setProperty('--text-dim', colors.textDim);
+    root.style.setProperty('--primary', theme.primary);
+    root.style.setProperty('--primary-hover', theme.primaryHover);
+    root.style.setProperty('--primary-glow', `${theme.primary}26`);
+    root.style.setProperty('--secondary', theme.secondary);
+    root.style.setProperty('--secondary-glow', `${theme.secondary}20`);
+    root.style.setProperty('--accent', theme.accent);
+    root.style.setProperty('--accent-glow', `${theme.accent}1a`);
+    root.style.setProperty('--warning', theme.warning);
+    root.style.setProperty('--warning-glow', `${theme.warning}1a`);
+    root.style.setProperty('--purple', theme.purple);
+    root.style.setProperty('--purple-glow', `${theme.purple}1a`);
+    root.style.setProperty('--bg-primary', theme.background);
+    root.style.setProperty('--bg-secondary', theme.backgroundSecondary);
+    root.style.setProperty('--bg-tertiary', selectedPreset === 'titanio-oscuro' ? '#1b293d' : theme.backgroundSecondary);
+    root.style.setProperty('--bg-card', theme.card);
+    root.style.setProperty('--bg-card-hover', theme.backgroundSecondary);
+    root.style.setProperty('--bg-glass', theme.card);
+    root.style.setProperty('--border-color', theme.border);
+    root.style.setProperty('--border-highlight', `${theme.primary}55`);
+    root.style.setProperty('--text-main', theme.textMain);
+    root.style.setProperty('--text-muted', theme.textMuted);
+    root.style.setProperty('--text-dim', theme.textDim);
     root.style.setProperty('--status-active', '#5d8d72');
     root.style.setProperty('--status-expired', '#ba4a4a');
     root.style.setProperty('--status-frozen', '#5f6778');
@@ -1940,20 +1962,11 @@ class GymApp {
     document.getElementById('set-tax-rate').value = s.taxRate || 15;
     document.getElementById('set-capacity').value = s.maxCapacity || 120;
     document.getElementById('set-ticket-footer').value = s.ticketFooter || '';
-    const theme = s.theme || {};
-    if (document.getElementById('set-theme-primary')) document.getElementById('set-theme-primary').value = this.normalizeThemeColor(theme.primary, '#d15252');
-    if (document.getElementById('set-theme-secondary')) document.getElementById('set-theme-secondary').value = this.normalizeThemeColor(theme.secondary, '#1d1d1d');
-    if (document.getElementById('set-theme-accent')) document.getElementById('set-theme-accent').value = this.normalizeThemeColor(theme.accent, '#9c6a63');
-    if (document.getElementById('set-theme-background')) document.getElementById('set-theme-background').value = this.normalizeThemeColor(theme.background, '#0a0e17');
-    if (document.getElementById('set-theme-background-secondary')) document.getElementById('set-theme-background-secondary').value = this.normalizeThemeColor(theme.backgroundSecondary, '#101827');
-    if (document.getElementById('set-theme-card')) document.getElementById('set-theme-card').value = this.normalizeThemeColor(theme.card, '#ffffff');
-    if (document.getElementById('set-theme-border')) document.getElementById('set-theme-border').value = this.normalizeThemeColor(theme.border, '#cbd5e1');
-    if (document.getElementById('set-theme-text-main')) document.getElementById('set-theme-text-main').value = this.normalizeThemeColor(theme.textMain, '#f3f4f6');
-    if (document.getElementById('set-theme-text-muted')) document.getElementById('set-theme-text-muted').value = this.normalizeThemeColor(theme.textMuted, '#a9b1c3');
-    if (document.getElementById('set-theme-text-dim')) document.getElementById('set-theme-text-dim').value = this.normalizeThemeColor(theme.textDim, '#7d6e6a');
-    if (document.getElementById('set-theme-warning')) document.getElementById('set-theme-warning').value = this.normalizeThemeColor(theme.warning, '#d8a35d');
-    if (document.getElementById('set-theme-purple')) document.getElementById('set-theme-purple').value = this.normalizeThemeColor(theme.purple, '#8f6c69');
-  
+    const selectedPreset = THEME_PRESETS[s.theme?.preset] ? s.theme.preset : 'forza-pro';
+    document.querySelectorAll('input[name="set-theme-preset"]').forEach(input => {
+      input.checked = input.value === selectedPreset;
+    });
+
     // Load Firebase config into inputs if available
     const fbConfig = window.GymFirebaseSync ? window.GymFirebaseSync.getConfig() : null;
     if (fbConfig) {
@@ -2040,18 +2053,7 @@ class GymApp {
     s.maxCapacity = parseInt(document.getElementById('set-capacity').value) || 120;
     s.ticketFooter = document.getElementById('set-ticket-footer').value.trim();
     s.theme = {
-      primary: this.normalizeThemeColor(document.getElementById('set-theme-primary')?.value, s.theme?.primary || '#d15252'),
-      secondary: this.normalizeThemeColor(document.getElementById('set-theme-secondary')?.value, s.theme?.secondary || '#1d1d1d'),
-      accent: this.normalizeThemeColor(document.getElementById('set-theme-accent')?.value, s.theme?.accent || '#9c6a63'),
-      background: this.normalizeThemeColor(document.getElementById('set-theme-background')?.value, s.theme?.background || '#0a0e17'),
-      backgroundSecondary: this.normalizeThemeColor(document.getElementById('set-theme-background-secondary')?.value, s.theme?.backgroundSecondary || '#101827'),
-      card: this.normalizeThemeColor(document.getElementById('set-theme-card')?.value, s.theme?.card || '#ffffff'),
-      border: this.normalizeThemeColor(document.getElementById('set-theme-border')?.value, s.theme?.border || '#cbd5e1'),
-      textMain: this.normalizeThemeColor(document.getElementById('set-theme-text-main')?.value, s.theme?.textMain || '#f3f4f6'),
-      textMuted: this.normalizeThemeColor(document.getElementById('set-theme-text-muted')?.value, s.theme?.textMuted || '#a9b1c3'),
-      textDim: this.normalizeThemeColor(document.getElementById('set-theme-text-dim')?.value, s.theme?.textDim || '#7d6e6a'),
-      warning: this.normalizeThemeColor(document.getElementById('set-theme-warning')?.value, s.theme?.warning || '#d8a35d'),
-      purple: this.normalizeThemeColor(document.getElementById('set-theme-purple')?.value, s.theme?.purple || '#8f6c69')
+      preset: document.querySelector('input[name="set-theme-preset"]:checked')?.value || 'forza-pro'
     };
   
     window.GymDB.save();
