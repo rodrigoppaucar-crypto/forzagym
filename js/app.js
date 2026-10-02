@@ -60,6 +60,7 @@ class GymApp {
     this.barcodeCamera = null;
     this.barcodeCameraStarting = false;
     this.barcodeCameraMode = null;
+    this.posSearchRenderTimer = null;
     this.visitPassCamera = null;
     this.visitPassCameraStarting = false;
     this.visitPassCameraCharging = false;
@@ -1414,6 +1415,14 @@ class GymApp {
     })[character]);
   }
 
+  schedulePOSSearchRender(query) {
+    if (this.posSearchRenderTimer) clearTimeout(this.posSearchRenderTimer);
+    this.posSearchRenderTimer = setTimeout(() => {
+      this.posSearchRenderTimer = null;
+      this.renderPOS('all', query);
+    }, 250);
+  }
+
   openProductModal(productId = '') {
     const product = productId ? window.GymDB.getProductById(productId) : null;
     document.getElementById('product-form-title').textContent = product ? 'Editar producto' : 'Nuevo producto';
@@ -1506,7 +1515,14 @@ class GymApp {
       const cameras = await Html5Qrcode.getCameras();
       const rearCamera = (cameras || []).find(camera => /back|rear|trasera|environment/i.test(camera.label || ''));
       const camera = rearCamera?.id || cameras?.[0]?.id || { facingMode: 'environment' };
-      await this.barcodeCamera.start(camera, { fps: 12, aspectRatio: 1.6 }, decodedText => {
+      await this.barcodeCamera.start(camera, {
+        fps: 20,
+        aspectRatio: 4 / 3,
+        qrbox: (viewfinderWidth, viewfinderHeight) => ({
+          width: Math.floor(viewfinderWidth * 0.94),
+          height: Math.floor(viewfinderHeight * 0.72)
+        })
+      }, decodedText => {
         const barcode = String(decodedText || '').trim();
         if (!barcode || this.barcodeCameraMode !== mode) return;
         if (window.GymAudio) window.GymAudio.playBeep();
@@ -1521,6 +1537,7 @@ class GymApp {
           this.handleProductBarcodeEnter();
         }
       }, () => {});
+      this.enableBarcodeCameraFocus();
     } catch (error) {
       console.error('No se pudo iniciar la cámara para códigos de barras:', error);
       this.barcodeCamera = null;
@@ -1531,6 +1548,44 @@ class GymApp {
         : 'No se pudo iniciar la cámara. Comprueba el permiso y que no esté en uso.', 'error');
     } finally {
       this.barcodeCameraStarting = false;
+    }
+  }
+
+  async enableBarcodeCameraFocus() {
+    const scanner = this.barcodeCamera;
+    if (!scanner || typeof scanner.getRunningTrackCapabilities !== 'function' ||
+        typeof scanner.applyVideoConstraints !== 'function') return;
+    let capabilities;
+    try {
+      capabilities = scanner.getRunningTrackCapabilities();
+    } catch (error) {
+      console.warn('No se pudieron consultar las capacidades de la cámara lectora; se usará su configuración predeterminada.', error);
+      return;
+    }
+
+    const videoConstraints = {};
+    const maxWidth = Number(capabilities.width?.max);
+    const maxHeight = Number(capabilities.height?.max);
+    if (Number.isFinite(maxWidth) && maxWidth > 0) {
+      videoConstraints.width = { ideal: Math.min(maxWidth, 1600) };
+    }
+    if (Number.isFinite(maxHeight) && maxHeight > 0) {
+      videoConstraints.height = { ideal: Math.min(maxHeight, 1200) };
+    }
+    if (Object.keys(videoConstraints).length) {
+      try {
+        await scanner.applyVideoConstraints(videoConstraints);
+      } catch (error) {
+        console.warn('La cámara no permitió aumentar la resolución; el lector seguirá funcionando.', error);
+      }
+    }
+
+    if (Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('continuous')) {
+      try {
+        await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] });
+      } catch (error) {
+        console.warn('La cámara no permitió activar el enfoque continuo; el lector seguirá funcionando.', error);
+      }
     }
   }
 
@@ -1711,6 +1766,10 @@ class GymApp {
   scanPOSBarcode(rawBarcode) {
     const barcode = String(rawBarcode || '').trim();
     const search = document.getElementById('pos-product-search');
+    if (this.posSearchRenderTimer) {
+      clearTimeout(this.posSearchRenderTimer);
+      this.posSearchRenderTimer = null;
+    }
     if (!barcode) return;
     const product = window.GymDB.getProducts().find(item => item.active !== false && String(item.barcode || '').trim().toLowerCase() === barcode.toLowerCase());
     if (!product) {

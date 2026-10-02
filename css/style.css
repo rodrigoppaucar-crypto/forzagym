@@ -1415,16 +1415,16 @@ body {
 
 .barcode-camera-viewport {
   width: 100%;
-  min-height: 150px;
-  max-height: 230px;
+  min-height: 240px;
+  max-height: min(55vh, 360px);
   overflow: hidden;
   background: #05070a;
 }
 
 .barcode-camera-viewport video {
   width: 100% !important;
-  max-height: 230px;
-  object-fit: cover;
+  max-height: min(55vh, 360px) !important;
+  object-fit: contain;
 }
 
 .visit-pass-camera-viewport {
