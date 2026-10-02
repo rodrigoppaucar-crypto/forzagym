@@ -351,10 +351,11 @@ body {
 .global-search input {
   width: 100%;
   padding: 0.6rem 1rem 0.6rem 2.4rem;
-  background: var(--bg-tertiary);
+  background: #fff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-full);
-  color: var(--text-main);
+  color: #111;
+  color-scheme: light;
   font-size: 0.88rem;
   transition: var(--transition);
 }
@@ -907,20 +908,46 @@ body {
 .form-control, .form-select {
   width: 100%;
   padding: 0.65rem 0.95rem;
-  background: var(--bg-tertiary);
+  background: #fff;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  color: var(--text-main);
+  color: #111;
+  color-scheme: light;
   font-size: 0.9rem;
   font-family: inherit;
-  transition: var(--transition);
+  transition: none;
 }
 
 .form-control:focus, .form-select:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
-  background: rgba(26, 34, 52, 0.95);
+  border-color: var(--border-color);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="color"]),
+textarea,
+select {
+  background-color: #fff !important;
+  color: #111 !important;
+  color-scheme: light;
+  transition: none !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="color"]):focus,
+textarea:focus,
+select:focus {
+  background-color: #fff !important;
+  color: #111 !important;
+  border-color: var(--border-color) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="color"]):-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #111 !important;
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
 }
 
 .form-row {
