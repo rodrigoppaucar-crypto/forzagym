@@ -27,22 +27,59 @@ class FirebaseSync {
     this.pendingData = null;
   }
 
+  normalizeConfig(config) {
+    if (!config || typeof config !== 'object') {
+      return null;
+    }
+
+    const normalized = {
+      apiKey: String(config.apiKey || '').trim(),
+      authDomain: String(config.authDomain || '').trim(),
+      projectId: String(config.projectId || '').trim(),
+      storageBucket: String(config.storageBucket || '').trim(),
+      messagingSenderId: String(config.messagingSenderId || '').trim(),
+      appId: String(config.appId || '').trim(),
+      measurementId: String(config.measurementId || '').trim()
+    };
+
+    if (!normalized.projectId && normalized.authDomain) {
+      const match = normalized.authDomain.match(/^([^.]+)/);
+      if (match) normalized.projectId = match[1];
+    }
+
+    if (!normalized.authDomain && normalized.projectId) {
+      normalized.authDomain = `${normalized.projectId}.firebaseapp.com`;
+    }
+
+    if (!normalized.storageBucket && normalized.projectId) {
+      normalized.storageBucket = `${normalized.projectId}.appspot.com`;
+    }
+
+    return normalized;
+  }
+
   // Load stored credentials or default to production Firebase config
   getConfig() {
     try {
       const stored = localStorage.getItem(FIREBASE_CONFIG_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        return this.normalizeConfig(parsed) || DEFAULT_FIREBASE_CONFIG;
       }
     } catch (e) {
       console.warn("Could not read Firebase config from storage:", e);
     }
-    return DEFAULT_FIREBASE_CONFIG;
+    return this.normalizeConfig(DEFAULT_FIREBASE_CONFIG) || DEFAULT_FIREBASE_CONFIG;
   }
 
   saveConfig(config) {
+    const normalized = this.normalizeConfig(config);
+    if (!normalized || !normalized.apiKey || !normalized.projectId || !normalized.appId) {
+      return false;
+    }
+
     try {
-      localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(config));
+      localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(normalized));
       return true;
     } catch (e) {
       console.error("Error saving Firebase config:", e);
@@ -52,7 +89,7 @@ class FirebaseSync {
 
   init() {
     const config = this.getConfig();
-    if (!config || !config.apiKey || !config.projectId) {
+    if (!config || !config.apiKey || !config.projectId || !config.appId) {
       this.updateStatusUI('disconnected', 'Modo Local');
       return false;
     }
@@ -66,6 +103,12 @@ class FirebaseSync {
       return false;
     }
 
+    const normalized = this.normalizeConfig(config) || this.getConfig();
+    if (!normalized || !normalized.apiKey || !normalized.projectId || !normalized.appId) {
+      this.updateStatusUI('error', 'Configuración de Firebase incompleta');
+      return false;
+    }
+
     try {
       // Unsubscribe previous listener if any
       if (this.unsubscribeListener) {
@@ -73,27 +116,39 @@ class FirebaseSync {
         this.unsubscribeListener = null;
       }
 
-      // Initialize or reuse Firebase App
-      if (!firebase.apps.length) {
-        this.app = firebase.initializeApp(config);
+      this.isConnected = false;
+
+      // Reinitialize the default Firebase app when config changed, otherwise it keeps the old project
+      const existingApp = firebase.apps.length ? firebase.apps[0] : null;
+      const existingOptions = existingApp && existingApp.options ? existingApp.options : {};
+      const configChanged = !existingApp ||
+        existingOptions.apiKey !== normalized.apiKey ||
+        (existingOptions.projectId || '') !== normalized.projectId ||
+        (existingOptions.appId || '') !== normalized.appId ||
+        (existingOptions.storageBucket || '') !== normalized.storageBucket;
+
+      if (configChanged) {
+        if (existingApp && typeof existingApp.delete === 'function') {
+          existingApp.delete().catch(() => {});
+        }
+        this.app = firebase.initializeApp(normalized);
       } else {
-        this.app = firebase.app();
+        this.app = existingApp || firebase.initializeApp(normalized);
       }
 
       this.firestore = firebase.firestore();
-      
+
       // Enable persistence if available
       try {
         this.firestore.enablePersistence({ synchronizeTabs: true }).catch(err => {
-          // Persistence may fail if multiple tabs are already opened or unsupported
-          console.log("Firestore persistence note:", err.code);
+          console.log("Firestore persistence note:", err && err.code ? err.code : err);
         });
       } catch (e) {
         // Ignored
       }
 
-      this.docRef = this.firestore.collection('forzagym_cloud').doc(config.projectId || 'main_database');
-      
+      this.docRef = this.firestore.collection('forzagym_cloud').doc(normalized.projectId || 'main_database');
+
       this.updateStatusUI('connecting', 'Conectando a Firebase...');
       this.startRealtimeListener();
       return true;

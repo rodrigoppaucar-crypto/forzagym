@@ -1052,6 +1052,60 @@
               <label class="form-label">Mensaje al Pie del Recibo / Ticket:</label>
               <input type="text" id="set-ticket-footer" class="form-control" />
             </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label class="form-label">Personalización visual del sistema:</label>
+              <div style="display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 12px; margin-top: 0.5rem;">
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Primario
+                  <input type="color" id="set-theme-primary" value="#d15252" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Secundario
+                  <input type="color" id="set-theme-secondary" value="#1d1d1d" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Acento
+                  <input type="color" id="set-theme-accent" value="#9c6a63" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Fondo
+                  <input type="color" id="set-theme-background" value="#0a0e17" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Fondo 2
+                  <input type="color" id="set-theme-background-secondary" value="#101827" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Tarjeta
+                  <input type="color" id="set-theme-card" value="#ffffff" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Borde
+                  <input type="color" id="set-theme-border" value="#b6b8be" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Texto
+                  <input type="color" id="set-theme-text-main" value="#f3f4f6" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Muted
+                  <input type="color" id="set-theme-text-muted" value="#a9b1c3" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Dim
+                  <input type="color" id="set-theme-text-dim" value="#7d6e6a" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Advert.
+                  <input type="color" id="set-theme-warning" value="#d8a35d" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                  Púrpura
+                  <input type="color" id="set-theme-purple" value="#8f6c69" class="form-control" style="height: 42px; padding: 4px; cursor: pointer;" />
+                </label>
+              </div>
+            </div>
           </div>
 
           <!-- Firebase Cloud Realtime Database Configuration -->

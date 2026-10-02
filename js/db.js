@@ -16,7 +16,21 @@ const INITIAL_DATA = {
     currency: "$",
     taxRate: 15,
     maxCapacity: 120,
-    ticketFooter: "¡Gracias por entrenar con nosotros! Rompe tus límites en ForzaGym."
+    ticketFooter: "¡Gracias por entrenar con nosotros! Rompe tus límites en ForzaGym.",
+    theme: {
+      primary: "#d15252",
+      secondary: "#1d1d1d",
+      accent: "#9c6a63",
+      background: "#0a0e17",
+      backgroundSecondary: "#101827",
+      card: "#ffffff",
+      border: "#cbd5e1",
+      textMain: "#f3f4f6",
+      textMuted: "#a9b1c3",
+      textDim: "#7d6e6a",
+      warning: "#d8a35d",
+      purple: "#8f6c69"
+    }
   },
   cashRegister: {
     isOpen: true,
@@ -631,6 +645,40 @@ class GymDatabase {
   constructor() {
     this.data = this.load();
     this.currentUser = this.loadCurrentUser();
+    this.setupCrossTabSync();
+  }
+
+  setupCrossTabSync() {
+    if (typeof window === 'undefined' || window.__FORZAGYM_SYNC_LISTENER_ATTACHED) return;
+
+    window.__FORZAGYM_SYNC_LISTENER_ATTACHED = true;
+    window.addEventListener('storage', (event) => {
+      if (!event.key || event.key !== DB_KEY || !event.newValue) return;
+
+      try {
+        const incoming = JSON.parse(event.newValue);
+        if (!incoming || typeof incoming !== 'object') return;
+
+        const currentHash = JSON.stringify(this.data);
+        const incomingHash = JSON.stringify(incoming);
+        if (currentHash === incomingHash) return;
+
+        this.data = incoming;
+
+        if (this.currentUser) {
+          const found = (this.data.users || []).find(u => u.id === this.currentUser.id);
+          if (found) {
+            this.currentUser = found;
+          }
+        }
+
+        if (window.GymAppInstance && typeof window.GymAppInstance.onCloudDataSync === 'function') {
+          window.GymAppInstance.onCloudDataSync();
+        }
+      } catch (error) {
+        console.warn('No se pudo sincronizar datos desde otra pestaña:', error);
+      }
+    });
   }
 
   load() {

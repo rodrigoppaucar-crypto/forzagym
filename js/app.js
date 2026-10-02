@@ -19,6 +19,7 @@ class GymApp {
     this.currentUser = window.GymDB.getCurrentUser();
     this.bindEvents();
     this.startLiveClock();
+    this.applyThemeFromSettings();
 
     // Initialize Firebase Cloud Realtime Sync
     if (window.GymFirebaseSync) {
@@ -46,12 +47,77 @@ class GymApp {
 
   // Real-time callback when data updates from other devices via Firebase
   onCloudDataSync() {
+    this.applyThemeFromSettings();
     this.updateOccupancy();
     this.updateHeaderUserProfile();
     this.renderUserNavPermissions();
     if (this.currentView) {
       this.renderView(this.currentView);
     }
+  }
+
+  normalizeThemeColor(value, fallback) {
+    if (!value || typeof value !== 'string') return fallback;
+
+    const trimmed = value.trim();
+    if (/^#[0-9a-fA-F]{3,8}$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    const rgbMatch = trimmed.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+))?\s*\)$/i);
+    if (rgbMatch) {
+      const [, r, g, b] = rgbMatch;
+      const toHex = (n) => Number(n).toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toLowerCase();
+    }
+
+    return fallback;
+  }
+
+  applyThemeFromSettings() {
+    const settings = window.GymDB && window.GymDB.data ? window.GymDB.data.settings : null;
+    const theme = settings && settings.theme ? settings.theme : {};
+    const root = document.documentElement;
+    const colors = {
+      primary: this.normalizeThemeColor(theme.primary, '#d15252'),
+      secondary: this.normalizeThemeColor(theme.secondary, '#1d1d1d'),
+      accent: this.normalizeThemeColor(theme.accent, '#9c6a63'),
+      background: this.normalizeThemeColor(theme.background, '#0a0e17'),
+      backgroundSecondary: this.normalizeThemeColor(theme.backgroundSecondary, '#101827'),
+      card: this.normalizeThemeColor(theme.card, '#ffffff'),
+      border: this.normalizeThemeColor(theme.border, '#cbd5e1'),
+      textMain: this.normalizeThemeColor(theme.textMain, '#f3f4f6'),
+      textMuted: this.normalizeThemeColor(theme.textMuted, '#a9b1c3'),
+      textDim: this.normalizeThemeColor(theme.textDim, '#7d6e6a'),
+      warning: this.normalizeThemeColor(theme.warning, '#d8a35d'),
+      purple: this.normalizeThemeColor(theme.purple, '#8f6c69')
+    };
+
+    root.style.setProperty('--primary', colors.primary);
+    root.style.setProperty('--primary-glow', `${colors.primary}26`);
+    root.style.setProperty('--secondary', colors.secondary);
+    root.style.setProperty('--secondary-glow', `${colors.secondary}20`);
+    root.style.setProperty('--accent', colors.accent);
+    root.style.setProperty('--accent-glow', `${colors.accent}1a`);
+    root.style.setProperty('--warning', colors.warning);
+    root.style.setProperty('--warning-glow', `${colors.warning}1a`);
+    root.style.setProperty('--purple', colors.purple);
+    root.style.setProperty('--purple-glow', `${colors.purple}1a`);
+    root.style.setProperty('--bg-primary', colors.background);
+    root.style.setProperty('--bg-secondary', colors.backgroundSecondary);
+    root.style.setProperty('--bg-tertiary', colors.background === '#0a0e17' ? '#171d2d' : '#f0e7e4');
+    root.style.setProperty('--bg-card', colors.card);
+    root.style.setProperty('--bg-card-hover', colors.card);
+    root.style.setProperty('--bg-glass', colors.card);
+    root.style.setProperty('--border-color', colors.border);
+    root.style.setProperty('--border-highlight', `${colors.primary}55`);
+    root.style.setProperty('--text-main', colors.textMain);
+    root.style.setProperty('--text-muted', colors.textMuted);
+    root.style.setProperty('--text-dim', colors.textDim);
+    root.style.setProperty('--status-active', '#5d8d72');
+    root.style.setProperty('--status-expired', '#ba4a4a');
+    root.style.setProperty('--status-frozen', '#5f6778');
+    root.style.setProperty('--status-pending', '#c98f45');
   }
 
   // --- Role-Based Access Control (RBAC) & Permissions ---
@@ -1874,7 +1940,20 @@ class GymApp {
     document.getElementById('set-tax-rate').value = s.taxRate || 15;
     document.getElementById('set-capacity').value = s.maxCapacity || 120;
     document.getElementById('set-ticket-footer').value = s.ticketFooter || '';
-
+    const theme = s.theme || {};
+    if (document.getElementById('set-theme-primary')) document.getElementById('set-theme-primary').value = this.normalizeThemeColor(theme.primary, '#d15252');
+    if (document.getElementById('set-theme-secondary')) document.getElementById('set-theme-secondary').value = this.normalizeThemeColor(theme.secondary, '#1d1d1d');
+    if (document.getElementById('set-theme-accent')) document.getElementById('set-theme-accent').value = this.normalizeThemeColor(theme.accent, '#9c6a63');
+    if (document.getElementById('set-theme-background')) document.getElementById('set-theme-background').value = this.normalizeThemeColor(theme.background, '#0a0e17');
+    if (document.getElementById('set-theme-background-secondary')) document.getElementById('set-theme-background-secondary').value = this.normalizeThemeColor(theme.backgroundSecondary, '#101827');
+    if (document.getElementById('set-theme-card')) document.getElementById('set-theme-card').value = this.normalizeThemeColor(theme.card, '#ffffff');
+    if (document.getElementById('set-theme-border')) document.getElementById('set-theme-border').value = this.normalizeThemeColor(theme.border, '#cbd5e1');
+    if (document.getElementById('set-theme-text-main')) document.getElementById('set-theme-text-main').value = this.normalizeThemeColor(theme.textMain, '#f3f4f6');
+    if (document.getElementById('set-theme-text-muted')) document.getElementById('set-theme-text-muted').value = this.normalizeThemeColor(theme.textMuted, '#a9b1c3');
+    if (document.getElementById('set-theme-text-dim')) document.getElementById('set-theme-text-dim').value = this.normalizeThemeColor(theme.textDim, '#7d6e6a');
+    if (document.getElementById('set-theme-warning')) document.getElementById('set-theme-warning').value = this.normalizeThemeColor(theme.warning, '#d8a35d');
+    if (document.getElementById('set-theme-purple')) document.getElementById('set-theme-purple').value = this.normalizeThemeColor(theme.purple, '#8f6c69');
+  
     // Load Firebase config into inputs if available
     const fbConfig = window.GymFirebaseSync ? window.GymFirebaseSync.getConfig() : null;
     if (fbConfig) {
@@ -1892,16 +1971,20 @@ class GymApp {
     const authDomain = document.getElementById('fb-authDomain').value.trim() || `${projectId}.firebaseapp.com`;
     const storageBucket = document.getElementById('fb-storageBucket').value.trim() || `${projectId}.appspot.com`;
     const appId = document.getElementById('fb-appId').value.trim();
-
+  
     if (!apiKey || !projectId || !appId) {
       this.showToast("Por favor completa al menos API Key, Project ID y App ID (*)", "warning");
       return;
     }
-
+  
     const config = { apiKey, projectId, authDomain, storageBucket, appId };
-    window.GymFirebaseSync.saveConfig(config);
+    const saved = window.GymFirebaseSync.saveConfig(config);
+    if (!saved) {
+      this.showToast("La configuración de Firebase no es válida.", "error");
+      return;
+    }
     const connected = window.GymFirebaseSync.connect(config);
-
+  
     if (connected) {
       this.showToast("Conectando con Firebase Firestore en la nube...", "info");
     } else {
@@ -1925,15 +2008,21 @@ class GymApp {
         window.GymFirebaseSync.unsubscribeListener();
         window.GymFirebaseSync.unsubscribeListener = null;
       }
+      if (window.GymFirebaseSync.app && typeof window.GymFirebaseSync.app.delete === 'function') {
+        window.GymFirebaseSync.app.delete().catch(() => {});
+      }
+      window.GymFirebaseSync.app = null;
+      window.GymFirebaseSync.firestore = null;
+      window.GymFirebaseSync.docRef = null;
       window.GymFirebaseSync.isConnected = false;
       window.GymFirebaseSync.updateStatusUI('disconnected', 'Modo Local (Desconectado)');
-
+  
       const fields = ['fb-apiKey', 'fb-projectId', 'fb-authDomain', 'fb-storageBucket', 'fb-appId'];
       fields.forEach(f => {
         const el = document.getElementById(f);
         if (el) el.value = '';
       });
-
+  
       this.showToast("Firebase desconectado. Operando en modo local.", "info");
     }
   }
@@ -1950,13 +2039,28 @@ class GymApp {
     s.taxRate = parseFloat(document.getElementById('set-tax-rate').value) || 15;
     s.maxCapacity = parseInt(document.getElementById('set-capacity').value) || 120;
     s.ticketFooter = document.getElementById('set-ticket-footer').value.trim();
-
+    s.theme = {
+      primary: this.normalizeThemeColor(document.getElementById('set-theme-primary')?.value, s.theme?.primary || '#d15252'),
+      secondary: this.normalizeThemeColor(document.getElementById('set-theme-secondary')?.value, s.theme?.secondary || '#1d1d1d'),
+      accent: this.normalizeThemeColor(document.getElementById('set-theme-accent')?.value, s.theme?.accent || '#9c6a63'),
+      background: this.normalizeThemeColor(document.getElementById('set-theme-background')?.value, s.theme?.background || '#0a0e17'),
+      backgroundSecondary: this.normalizeThemeColor(document.getElementById('set-theme-background-secondary')?.value, s.theme?.backgroundSecondary || '#101827'),
+      card: this.normalizeThemeColor(document.getElementById('set-theme-card')?.value, s.theme?.card || '#ffffff'),
+      border: this.normalizeThemeColor(document.getElementById('set-theme-border')?.value, s.theme?.border || '#cbd5e1'),
+      textMain: this.normalizeThemeColor(document.getElementById('set-theme-text-main')?.value, s.theme?.textMain || '#f3f4f6'),
+      textMuted: this.normalizeThemeColor(document.getElementById('set-theme-text-muted')?.value, s.theme?.textMuted || '#a9b1c3'),
+      textDim: this.normalizeThemeColor(document.getElementById('set-theme-text-dim')?.value, s.theme?.textDim || '#7d6e6a'),
+      warning: this.normalizeThemeColor(document.getElementById('set-theme-warning')?.value, s.theme?.warning || '#d8a35d'),
+      purple: this.normalizeThemeColor(document.getElementById('set-theme-purple')?.value, s.theme?.purple || '#8f6c69')
+    };
+  
     window.GymDB.save();
-    
+    this.applyThemeFromSettings();
+      
     // Update Header Brand
     const headerTitle = document.querySelector('.brand-info h1');
     if (headerTitle) headerTitle.textContent = s.gymName;
-
+  
     this.showToast("Configuración del gimnasio guardada con éxito", "success");
     this.updateOccupancy();
   }
