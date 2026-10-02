@@ -351,6 +351,53 @@
             </div>
           </div>
         </div>
+
+        <section id="dashboard-attendance-admin" class="card dashboard-attendance-admin" hidden>
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fa-solid fa-calendar-days"></i>
+              <span>Administrar registro de entradas</span>
+            </div>
+            <span id="dashboard-attendance-count" class="attendance-admin-count" aria-live="polite"></span>
+          </div>
+          <p class="attendance-admin-note">Limpiar los filtros solo muestra nuevamente todo el historial; no elimina registros.</p>
+          <div class="attendance-admin-filters">
+            <label class="form-group">
+              <span class="form-label">Desde</span>
+              <input id="dashboard-attendance-from" class="form-control" type="date" />
+            </label>
+            <label class="form-group">
+              <span class="form-label">Hasta</span>
+              <input id="dashboard-attendance-to" class="form-control" type="date" />
+            </label>
+            <div class="attendance-admin-actions">
+              <button class="btn btn-primary btn-sm" type="button" onclick="GymAppInstance.filterDashboardAttendances()">
+                <i class="fa-solid fa-filter"></i> Filtrar
+              </button>
+              <button class="btn btn-outline btn-sm" type="button" onclick="GymAppInstance.resetDashboardAttendanceFilters()">
+                <i class="fa-solid fa-eraser"></i> Limpiar filtros
+              </button>
+              <button class="btn btn-outline btn-sm" type="button" onclick="GymAppInstance.exportDashboardAttendances()">
+                <i class="fa-solid fa-file-csv"></i> Exportar CSV
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Socio</th>
+                  <th>Membresía</th>
+                  <th>Estado</th>
+                  <th>Hora</th>
+                  <th>Método</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-attendance-admin-rows"></tbody>
+            </table>
+          </div>
+        </section>
       </main>
 
       <!-- ==========================================================================
@@ -2129,6 +2176,6 @@
   <script src="js/qr.js?v=session-v2"></script>
   <script src="js/pdf-ticket.js?v=visit-pass-print-v1"></script>
   <script src="js/charts.js"></script>
-  <script src="js/app.js?v=pos-barcode-camera-v2"></script>
+  <script src="js/app.js?v=attendance-history-v1"></script>
 </body>
 </html>

@@ -819,6 +819,45 @@ body {
   margin-bottom: 1.75rem;
 }
 
+#dashboard-attendance-admin[hidden] {
+  display: none !important;
+}
+
+.dashboard-attendance-admin {
+  margin-bottom: 1.75rem;
+}
+
+.attendance-admin-count {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.attendance-admin-note {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-bottom: 0.85rem;
+}
+
+.attendance-admin-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.attendance-admin-filters .form-group {
+  width: min(100%, 210px);
+  margin-bottom: 0;
+}
+
+.attendance-admin-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .chart-container {
   position: relative;
   height: 280px;

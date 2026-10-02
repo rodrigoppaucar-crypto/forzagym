@@ -412,6 +412,112 @@ class GymApp {
         </tr>
       `).join('');
     }
+
+    this.renderDashboardAttendanceManagement();
+  }
+
+  renderDashboardAttendanceManagement() {
+    const panel = document.getElementById('dashboard-attendance-admin');
+    if (!panel) return;
+
+    const isAdmin = this.currentUser?.role === 'admin';
+    panel.hidden = !isAdmin;
+    if (isAdmin) this.filterDashboardAttendances();
+  }
+
+  filterDashboardAttendances() {
+    if (this.currentUser?.role !== 'admin') {
+      this.showToast('Solo el administrador puede administrar el registro de entradas.', 'warning');
+      return;
+    }
+
+    const from = document.getElementById('dashboard-attendance-from')?.value || '';
+    const to = document.getElementById('dashboard-attendance-to')?.value || '';
+    const tableBody = document.getElementById('dashboard-attendance-admin-rows');
+    const count = document.getElementById('dashboard-attendance-count');
+    if (!tableBody || !count) return;
+
+    if (from && to && from > to) {
+      count.textContent = 'El rango de fechas no es válido.';
+      tableBody.innerHTML = '<tr><td colspan="6">La fecha “Desde” debe ser anterior o igual a “Hasta”.</td></tr>';
+      return;
+    }
+
+    const dateOf = attendance => String(attendance.date || attendance.timestamp || '').slice(0, 10);
+    const attendances = (window.GymDB.data.attendances || [])
+      .filter(attendance => {
+        const date = dateOf(attendance);
+        return (!from || date >= from) && (!to || date <= to);
+      })
+      .sort((a, b) => {
+        const aDateTime = `${dateOf(a)}T${a.time || ''}`;
+        const bDateTime = `${dateOf(b)}T${b.time || ''}`;
+        return bDateTime.localeCompare(aDateTime);
+      });
+
+    count.textContent = `${attendances.length} ${attendances.length === 1 ? 'registro' : 'registros'}`;
+    tableBody.innerHTML = attendances.length
+      ? attendances.map(attendance => {
+        const date = dateOf(attendance);
+        const displayDate = date
+          ? new Date(`${date}T12:00:00`).toLocaleDateString('es-EC')
+          : '—';
+        const isGranted = attendance.status === 'granted';
+        return `
+          <tr>
+            <td>${this.escapePosHtml(displayDate)}</td>
+            <td>${this.escapePosHtml(attendance.memberName || 'Socio')}</td>
+            <td>${this.escapePosHtml(attendance.membershipName || '—')}</td>
+            <td><span class="status-badge ${isGranted ? 'active' : 'expired'}">${isGranted ? 'Permitido' : 'Denegado'}</span></td>
+            <td>${this.escapePosHtml(attendance.time || '—')}</td>
+            <td>${this.escapePosHtml(attendance.method || '—')}</td>
+          </tr>
+        `;
+      }).join('')
+      : '<tr><td colspan="6">No hay registros para las fechas seleccionadas.</td></tr>';
+  }
+
+  resetDashboardAttendanceFilters() {
+    if (this.currentUser?.role !== 'admin') {
+      this.showToast('Solo el administrador puede administrar el registro de entradas.', 'warning');
+      return;
+    }
+
+    const from = document.getElementById('dashboard-attendance-from');
+    const to = document.getElementById('dashboard-attendance-to');
+    if (from) from.value = '';
+    if (to) to.value = '';
+    this.filterDashboardAttendances();
+  }
+
+  exportDashboardAttendances() {
+    if (this.currentUser?.role !== 'admin') {
+      this.showToast('Solo el administrador puede exportar el registro de entradas.', 'warning');
+      return;
+    }
+
+    const from = document.getElementById('dashboard-attendance-from')?.value || '';
+    const to = document.getElementById('dashboard-attendance-to')?.value || '';
+    if (from && to && from > to) {
+      this.showToast('Revisa el rango de fechas antes de exportar.', 'warning');
+      return;
+    }
+
+    const dateOf = attendance => String(attendance.date || attendance.timestamp || '').slice(0, 10);
+    const rows = (window.GymDB.data.attendances || [])
+      .filter(attendance => {
+        const date = dateOf(attendance);
+        return (!from || date >= from) && (!to || date <= to);
+      })
+      .map(attendance => ({
+        Fecha: dateOf(attendance),
+        Socio: attendance.memberName || '',
+        Membresia: attendance.membershipName || '',
+        Estado: attendance.status === 'granted' ? 'Permitido' : 'Denegado',
+        Hora: attendance.time || '',
+        Metodo: attendance.method || ''
+      }));
+    GymExporter.exportToCSV('asistencias_por_fecha', rows);
   }
 
   // --- Members Module ---

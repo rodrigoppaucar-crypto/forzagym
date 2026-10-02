@@ -12,6 +12,7 @@
 - Gráfico de **Horas Pico** de afluencia para optimizar el personal.
 - Monitor de **Aforo en Tiempo Real** con barra dinámica de capacidad.
 - Reloj digital en vivo con sincronización por segundo.
+- Historial de entradas con filtros por rango de fechas y exportación CSV, disponible solo para el administrador; limpiar filtros no elimina registros.
 
 ### 2. 🪪 Control de Acceso & Torniquete Virtual
 - **Escáner QR interactivo** y búsqueda rápida por Cédula / DNI / ID de socio.
