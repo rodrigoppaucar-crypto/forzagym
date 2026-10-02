@@ -36,6 +36,7 @@
 - Creación de pases de visita sin vencimiento con código y QR únicos, generados y visibles desde el formulario al crear el plan.
 - Impresión del pase QR como tarjeta horizontal de tamaño estándar para recortar y plastificar.
 - Cualquier trabajador autenticado puede abrir **Cobrar Pase QR** sin recibir permisos para el POS general; cada cobro registra trabajador y método de pago.
+- El escáner del pase usa lectura rápida, encuadre QR amplio y enfoque continuo cuando la cámara lo admite.
 
 ### 5. 🛒 Punto de Venta (POS) & Control de Tienda / Suplementos
 - Catálogo táctil con categorías: **Suplementos**, **Bebidas**, **Snacks**, **Accesorios & Ropa**.

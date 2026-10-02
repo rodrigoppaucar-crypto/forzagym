@@ -1173,9 +1173,10 @@ class GymApp {
     this.visitPassCameraCharging = false;
     this.visitPassCameraPrint = printReceipt;
     wrapper.hidden = false;
+    const scanInstructions = 'Centra el QR en el encuadre, acerca la tarjeta si hace falta y mantenla quieta con buena iluminación.';
     if (hint) hint.textContent = printReceipt
-      ? 'Al reconocer el QR se registrará el cobro y se abrirá la impresión del recibo.'
-      : 'Al reconocer el QR se registrará el cobro sin imprimir recibo.';
+      ? `${scanInstructions} Al reconocerlo, se cobrará y se imprimirá el recibo.`
+      : `${scanInstructions} Al reconocerlo, se cobrará sin imprimir.`;
 
     try {
       const scanOptions = typeof Html5QrcodeSupportedFormats !== 'undefined' &&
@@ -1187,7 +1188,14 @@ class GymApp {
       const rearCamera = (cameras || []).find(camera => /back|rear|trasera|environment/i.test(camera.label || ''));
       const camera = rearCamera?.id || cameras?.[0]?.id || { facingMode: 'environment' };
 
-      await this.visitPassCamera.start(camera, { fps: 12, aspectRatio: 1.6 }, async decodedText => {
+      await this.visitPassCamera.start(camera, {
+        fps: 20,
+        aspectRatio: 4 / 3,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.85);
+          return { width: size, height: size };
+        }
+      }, async decodedText => {
         if (this.visitPassCameraCharging) return;
         const code = String(decodedText || '').trim().toUpperCase();
         const plan = window.GymDB.getMemberships().find(item => item.visitPass && item.code === code);
@@ -1210,6 +1218,7 @@ class GymApp {
         await this.stopVisitPassCamera();
         this.chargeVisitPass(shouldPrint, true);
       }, () => {});
+      this.enableVisitPassContinuousFocus();
     } catch (error) {
       console.error('No se pudo iniciar el escáner QR del pase:', error);
       this.visitPassCamera = null;
@@ -1221,6 +1230,44 @@ class GymApp {
         : 'No se pudo iniciar el lector QR. Comprueba el permiso de cámara.', 'error');
     } finally {
       this.visitPassCameraStarting = false;
+    }
+  }
+
+  async enableVisitPassContinuousFocus() {
+    const scanner = this.visitPassCamera;
+    if (!scanner || typeof scanner.getRunningTrackCapabilities !== 'function' ||
+        typeof scanner.applyVideoConstraints !== 'function') return;
+    let capabilities;
+    try {
+      capabilities = scanner.getRunningTrackCapabilities();
+    } catch (error) {
+      console.warn('No se pudieron consultar las capacidades de la cámara del pase; se usará su configuración predeterminada.', error);
+      return;
+    }
+
+    const videoConstraints = {};
+    const maxWidth = Number(capabilities.width?.max);
+    const maxHeight = Number(capabilities.height?.max);
+    if (Number.isFinite(maxWidth) && maxWidth > 0) {
+      videoConstraints.width = { ideal: Math.min(maxWidth, 1920) };
+    }
+    if (Number.isFinite(maxHeight) && maxHeight > 0) {
+      videoConstraints.height = { ideal: Math.min(maxHeight, 1080) };
+    }
+    if (Object.keys(videoConstraints).length) {
+      try {
+        await scanner.applyVideoConstraints(videoConstraints);
+      } catch (error) {
+        console.warn('La cámara no permitió aumentar la resolución; el lector QR seguirá funcionando.', error);
+      }
+    }
+
+    if (Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('continuous')) {
+      try {
+        await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] });
+      } catch (error) {
+        console.warn('La cámara no permitió activar el enfoque continuo; el lector QR seguirá funcionando.', error);
+      }
     }
   }
 

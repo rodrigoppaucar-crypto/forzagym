@@ -1427,6 +1427,16 @@ body {
   object-fit: cover;
 }
 
+.visit-pass-camera-viewport {
+  min-height: 260px;
+  max-height: min(60vh, 440px);
+}
+
+.visit-pass-camera-viewport video {
+  max-height: min(60vh, 440px);
+  object-fit: contain;
+}
+
 .barcode-camera-footer {
   display: flex;
   justify-content: space-between;
