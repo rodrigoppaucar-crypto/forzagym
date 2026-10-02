@@ -60,6 +60,8 @@ class GymApp {
     this.barcodeCamera = null;
     this.barcodeCameraStarting = false;
     this.barcodeCameraMode = null;
+    this.barcodeCameraDeviceIds = { pos: '', product: '' };
+    this.barcodeCameraLastMiss = { code: '', time: 0 };
     this.posSearchRenderTimer = null;
     this.visitPassCamera = null;
     this.visitPassCameraStarting = false;
@@ -1500,7 +1502,7 @@ class GymApp {
     if (!container || !wrapper) return;
 
     const supportedFormats = Html5QrcodeSupportedFormats;
-    const formatNames = ['EAN_13', 'EAN_8', 'UPC_A', 'UPC_E', 'CODE_128', 'CODE_39', 'ITF', 'CODABAR'];
+    const formatNames = ['EAN_13', 'EAN_8', 'UPC_A', 'UPC_E', 'CODE_128', 'CODE_39', 'CODE_93', 'ITF', 'CODABAR'];
     const formatsToSupport = formatNames.map(name => supportedFormats[name]).filter(format => format !== undefined);
     if (!formatsToSupport.length) {
       this.showToast('El lector cargado no admite formatos de código de barras.', 'error');
@@ -1509,34 +1511,58 @@ class GymApp {
 
     this.barcodeCameraStarting = true;
     this.barcodeCameraMode = mode;
+    this.barcodeCameraLastMiss = { code: '', time: 0 };
     wrapper.hidden = false;
     try {
-      this.barcodeCamera = new Html5Qrcode(containerId, { formatsToSupport });
+      this.barcodeCamera = new Html5Qrcode(containerId, {
+        formatsToSupport,
+        useBarCodeDetectorIfSupported: true
+      });
       const cameras = await Html5Qrcode.getCameras();
-      const rearCamera = (cameras || []).find(camera => /back|rear|trasera|environment/i.test(camera.label || ''));
-      const camera = rearCamera?.id || cameras?.[0]?.id || { facingMode: 'environment' };
-      await this.barcodeCamera.start(camera, {
-        fps: 20,
-        aspectRatio: 4 / 3,
+      if (!cameras.length) {
+        throw new Error('No se encontraron cámaras disponibles.');
+      }
+      const selectedCameraId = this.barcodeCameraDeviceIds[mode];
+      const rearCamera = cameras.find(camera => /back|rear|trasera|environment/i.test(camera.label || ''));
+      const selectedCamera = cameras.find(camera => camera.id === selectedCameraId) || rearCamera || cameras[0];
+      this.renderBarcodeCameraOptions(mode, cameras, selectedCamera.id);
+
+      const constraints = {
+        deviceId: { exact: selectedCamera.id },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        frameRate: { ideal: 30, max: 30 }
+      };
+      const onBarcodeDecoded = decodedText => this.handleBarcodeCameraResult(decodedText, mode);
+      const scanConfig = {
+        fps: 25,
         qrbox: (viewfinderWidth, viewfinderHeight) => ({
-          width: Math.floor(viewfinderWidth * 0.94),
-          height: Math.floor(viewfinderHeight * 0.72)
+          width: Math.floor(viewfinderWidth * 0.98),
+          height: Math.floor(viewfinderHeight * 0.9)
         })
-      }, decodedText => {
-        const barcode = String(decodedText || '').trim();
-        if (!barcode || this.barcodeCameraMode !== mode) return;
-        if (window.GymAudio) window.GymAudio.playBeep();
-        this.stopBarcodeCamera();
-        if (mode === 'pos') {
-          const search = document.getElementById('pos-product-search');
-          if (search) search.value = barcode;
-          this.scanPOSBarcode(barcode);
-          if (search) search.focus();
-        } else {
-          document.getElementById('product-barcode').value = barcode;
-          this.handleProductBarcodeEnter();
+      };
+      try {
+        await this.barcodeCamera.start(selectedCamera.id, {
+          ...scanConfig,
+          videoConstraints: constraints
+        }, onBarcodeDecoded, () => {});
+      } catch (error) {
+        if (!['TypeError', 'OverconstrainedError', 'NotSupportedError'].includes(error?.name)) throw error;
+        console.warn('La cámara no aceptó el perfil de alta resolución; se iniciará con la configuración compatible.', error);
+        try {
+          this.barcodeCamera.clear();
+        } catch (clearError) {
+          console.warn('No se pudo reiniciar el lector antes de usar el perfil compatible.', clearError);
         }
-      }, () => {});
+        this.barcodeCamera = new Html5Qrcode(containerId, {
+          formatsToSupport,
+          useBarCodeDetectorIfSupported: true
+        });
+        await this.barcodeCamera.start(selectedCamera.id, {
+          ...scanConfig,
+          fps: 20
+        }, onBarcodeDecoded, () => {});
+      }
       this.enableBarcodeCameraFocus();
     } catch (error) {
       console.error('No se pudo iniciar la cámara para códigos de barras:', error);
@@ -1548,6 +1574,62 @@ class GymApp {
         : 'No se pudo iniciar la cámara. Comprueba el permiso y que no esté en uso.', 'error');
     } finally {
       this.barcodeCameraStarting = false;
+    }
+  }
+
+  renderBarcodeCameraOptions(mode, cameras, selectedCameraId) {
+    const select = document.getElementById(`${mode === 'pos' ? 'pos' : 'product'}-barcode-camera-select`);
+    if (!select) return;
+    select.innerHTML = cameras.map((camera, index) => {
+      const label = camera.label || `Cámara ${index + 1}`;
+      return `<option value="${this.escapePosHtml(camera.id)}">${this.escapePosHtml(label)}</option>`;
+    }).join('');
+    select.value = selectedCameraId;
+    select.closest('.barcode-camera-select-wrap').hidden = cameras.length < 2;
+    this.barcodeCameraDeviceIds[mode] = selectedCameraId;
+  }
+
+  async switchBarcodeCamera(deviceId) {
+    const mode = this.barcodeCameraMode;
+    if (!mode || !deviceId || this.barcodeCameraStarting) return;
+    this.barcodeCameraDeviceIds[mode] = deviceId;
+    await this.stopBarcodeCamera();
+    await this.toggleBarcodeCamera(mode);
+  }
+
+  handleBarcodeCameraResult(decodedText, mode) {
+    const barcode = String(decodedText || '').trim();
+    if (!barcode || this.barcodeCameraMode !== mode) return;
+
+    if (mode === 'pos') {
+      const product = window.GymDB.getProducts().find(item =>
+        item.active !== false &&
+        String(item.barcode || '').trim().toLowerCase() === barcode.toLowerCase()
+      );
+      if (!product) {
+        const now = Date.now();
+        if (barcode !== this.barcodeCameraLastMiss.code || now - this.barcodeCameraLastMiss.time > 1800) {
+          this.barcodeCameraLastMiss = { code: barcode, time: now };
+          const hint = document.getElementById('pos-barcode-camera-hint');
+          if (hint) hint.textContent = `No se encontró "${barcode}". Mantén la cámara abierta y presenta otro código.`;
+          if (window.GymAudio) window.GymAudio.playDenied();
+        }
+        return;
+      }
+    }
+
+    if (window.GymAudio) window.GymAudio.playBeep();
+    const hint = document.getElementById(`${mode === 'pos' ? 'pos' : 'product'}-barcode-camera-hint`);
+    if (hint) hint.textContent = `Código leído: ${barcode}`;
+    this.stopBarcodeCamera();
+    if (mode === 'pos') {
+      const search = document.getElementById('pos-product-search');
+      if (search) search.value = barcode;
+      this.scanPOSBarcode(barcode);
+      if (search) search.focus();
+    } else {
+      document.getElementById('product-barcode').value = barcode;
+      this.handleProductBarcodeEnter();
     }
   }
 
@@ -1567,10 +1649,14 @@ class GymApp {
     const maxWidth = Number(capabilities.width?.max);
     const maxHeight = Number(capabilities.height?.max);
     if (Number.isFinite(maxWidth) && maxWidth > 0) {
-      videoConstraints.width = { ideal: Math.min(maxWidth, 1600) };
+      videoConstraints.width = { ideal: Math.min(maxWidth, 1920) };
     }
     if (Number.isFinite(maxHeight) && maxHeight > 0) {
-      videoConstraints.height = { ideal: Math.min(maxHeight, 1200) };
+      videoConstraints.height = { ideal: Math.min(maxHeight, 1080) };
+    }
+    const maxFrameRate = Number(capabilities.frameRate?.max);
+    if (Number.isFinite(maxFrameRate) && maxFrameRate > 0) {
+      videoConstraints.frameRate = { ideal: Math.min(maxFrameRate, 30) };
     }
     if (Object.keys(videoConstraints).length) {
       try {
@@ -1580,11 +1666,22 @@ class GymApp {
       }
     }
 
-    if (Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('continuous')) {
+    const focusModes = capabilities.focusMode;
+    const advanced = [];
+    if (Array.isArray(focusModes) && focusModes.includes('continuous')) {
+      advanced.push({ focusMode: 'continuous' });
+    }
+    if (Array.isArray(capabilities.exposureMode) && capabilities.exposureMode.includes('continuous')) {
+      advanced.push({ exposureMode: 'continuous' });
+    }
+    if (Array.isArray(capabilities.whiteBalanceMode) && capabilities.whiteBalanceMode.includes('continuous')) {
+      advanced.push({ whiteBalanceMode: 'continuous' });
+    }
+    if (advanced.length) {
       try {
-        await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        await scanner.applyVideoConstraints({ advanced });
       } catch (error) {
-        console.warn('La cámara no permitió activar el enfoque continuo; el lector seguirá funcionando.', error);
+        console.warn('La cámara no permitió optimizar el enfoque o la exposición; el lector seguirá funcionando.', error);
       }
     }
   }

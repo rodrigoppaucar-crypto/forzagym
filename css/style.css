@@ -1413,17 +1413,38 @@ body {
   border-radius: var(--radius-sm);
 }
 
+.barcode-camera-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.55rem;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.barcode-camera-select-wrap[hidden] {
+  display: none;
+}
+
+.barcode-camera-select-wrap .form-select {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0.45rem 0.65rem;
+}
+
 .barcode-camera-viewport {
   width: 100%;
-  min-height: 240px;
-  max-height: min(55vh, 360px);
+  min-height: 320px;
+  max-height: min(65vh, 520px);
   overflow: hidden;
   background: #05070a;
 }
 
 .barcode-camera-viewport video {
   width: 100% !important;
-  max-height: min(55vh, 360px) !important;
+  max-height: min(65vh, 520px) !important;
   object-fit: contain;
 }
 

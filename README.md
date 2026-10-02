@@ -42,7 +42,7 @@
 - Catálogo táctil con categorías: **Suplementos**, **Bebidas**, **Snacks**, **Accesorios & Ropa**.
 - Carrito de compras interactivo con cálculo automático de subtotal, IVA y total.
 - Control de inventario y stock mínimo.
-- Lectura de códigos de barras en ventas y alta de productos, por cámara o lector USB/Bluetooth; la cámara usa enfoque y resolución mejorados cuando son compatibles.
+- Lectura de códigos de barras en ventas y alta de productos, por cámara o lector USB/Bluetooth. La cámara solicita alta resolución y enfoque/exposición mejorados cuando son compatibles, permite elegir entre las cámaras del computador y mantiene el escaneo activo si el producto leído no está en el catálogo.
 - Múltiples métodos de pago: Efectivo, Tarjeta de Débito, Crédito, Transferencia.
 - El cobro de pases se realiza desde el módulo independiente **Cobrar Pase QR** mediante escaneo automático o ingreso manual del código. El trabajador elige entre cobrar sin imprimir o cobrar e imprimir el recibo.
 - **Generador e impresión de Ticket Térmico (80mm)** con datos fiscales del gimnasio.
