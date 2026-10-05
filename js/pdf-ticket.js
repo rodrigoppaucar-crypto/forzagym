@@ -267,11 +267,11 @@ const GymExporter = {
           }
           .credential-card {
             width: 320px;
-            background: linear-gradient(145deg, #090e1a, #162444);
-            border: 2px solid #00f2fe;
+            background: linear-gradient(145deg, #fffdfc, #f4f0ee);
+            border: 2px solid #d15252;
             border-radius: 18px;
             padding: 24px;
-            color: #fff;
+            color: #1a1717;
             text-align: center;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
           }
@@ -279,12 +279,12 @@ const GymExporter = {
             font-size: 18px;
             font-weight: 900;
             letter-spacing: 1px;
-            color: #00f2fe;
+            color: #b73d3d;
             margin-bottom: 4px;
           }
           .gym-slogan {
             font-size: 9px;
-            color: #94a3b8;
+            color: #5c5553;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 16px;
@@ -293,10 +293,10 @@ const GymExporter = {
             width: 90px;
             height: 90px;
             border-radius: 50%;
-            border: 3px solid #00f2fe;
+            border: 3px solid #d15252;
             margin: 0 auto 12px;
             overflow: hidden;
-            background: #1e293b;
+            background: #f0e7e4;
           }
           .avatar-box img {
             width: 100%;
@@ -310,13 +310,13 @@ const GymExporter = {
           }
           .member-id {
             font-size: 12px;
-            color: #00f2fe;
+            color: #9f3939;
             font-weight: 700;
             margin-bottom: 12px;
           }
           .badge-plan {
-            background: #10b981;
-            color: #fff;
+            background: #d8eee4;
+            color: #1a1717;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 11px;
@@ -329,7 +329,7 @@ const GymExporter = {
             grid-template-columns: 1fr 1fr;
             gap: 8px;
             font-size: 11px;
-            background: rgba(255,255,255,0.06);
+            background: #f0e7e4;
             padding: 10px;
             border-radius: 10px;
             margin-bottom: 16px;
@@ -337,7 +337,7 @@ const GymExporter = {
           }
           .meta-grid strong {
             display: block;
-            color: #94a3b8;
+            color: #5c5553;
             font-size: 9px;
             text-transform: uppercase;
           }

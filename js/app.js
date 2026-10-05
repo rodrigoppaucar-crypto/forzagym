@@ -6,9 +6,12 @@
 const THEME_PRESETS = {
   'forza-pro': {
     primary: '#c94b4b',
+    primarySoft: '#f7dddd',
     primaryHover: '#ad3939',
     secondary: '#292321',
+    secondarySoft: '#e8e3e1',
     accent: '#ab6c54',
+    accentSoft: '#d8eee4',
     background: '#f4f0ee',
     backgroundSecondary: '#fffdfc',
     card: '#ffffff',
@@ -17,7 +20,8 @@ const THEME_PRESETS = {
     textMuted: '#625957',
     textDim: '#817572',
     warning: '#b7791f',
-    purple: '#7657a5'
+    purple: '#7657a5',
+    purpleSoft: '#eadedd'
   },
   'titanio-oscuro': {
     primary: '#ef5350',
@@ -28,17 +32,24 @@ const THEME_PRESETS = {
     backgroundSecondary: '#101a2a',
     card: '#162235',
     border: '#2d3b50',
-    textMain: '#f3f4f6',
-    textMuted: '#b6c2d2',
-    textDim: '#8391a5',
+    textMain: '#d9e5df',
+    textMuted: '#b6c7bd',
+    textDim: '#91a79b',
     warning: '#fbbf24',
-    purple: '#a78bfa'
+    purple: '#a78bfa',
+    primarySoft: '#fbd5d2',
+    secondarySoft: '#e1e5eb',
+    accentSoft: '#fce7bd',
+    purpleSoft: '#e7ddf7'
   },
   'impulso-verde': {
     primary: '#14866d',
+    primarySoft: '#d1eee6',
     primaryHover: '#0f6e59',
     secondary: '#12342e',
+    secondarySoft: '#d9e7e3',
     accent: '#e5a93d',
+    accentSoft: '#f8e9c9',
     background: '#f0f7f4',
     backgroundSecondary: '#e7f1ed',
     card: '#ffffff',
@@ -47,7 +58,8 @@ const THEME_PRESETS = {
     textMuted: '#4b665d',
     textDim: '#668076',
     warning: '#b7791f',
-    purple: '#7756a8'
+    purple: '#7756a8',
+    purpleSoft: '#e8def7'
   }
 };
 
@@ -121,15 +133,19 @@ class GymApp {
     const root = document.documentElement;
 
     root.style.setProperty('--primary', theme.primary);
+    root.style.setProperty('--primary-soft', theme.primarySoft);
     root.style.setProperty('--primary-hover', theme.primaryHover);
     root.style.setProperty('--primary-glow', `${theme.primary}26`);
     root.style.setProperty('--secondary', theme.secondary);
+    root.style.setProperty('--secondary-soft', theme.secondarySoft);
     root.style.setProperty('--secondary-glow', `${theme.secondary}20`);
     root.style.setProperty('--accent', theme.accent);
+    root.style.setProperty('--accent-soft', theme.accentSoft);
     root.style.setProperty('--accent-glow', `${theme.accent}1a`);
     root.style.setProperty('--warning', theme.warning);
     root.style.setProperty('--warning-glow', `${theme.warning}1a`);
     root.style.setProperty('--purple', theme.purple);
+    root.style.setProperty('--purple-soft', theme.purpleSoft);
     root.style.setProperty('--purple-glow', `${theme.purple}1a`);
     root.style.setProperty('--bg-primary', theme.background);
     root.style.setProperty('--bg-secondary', theme.backgroundSecondary);
