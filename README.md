@@ -19,6 +19,7 @@
 - **Validación automática**:
   - 🟢 **Acceso Permitido**: Mensaje de bienvenida, foto del socio, plan activo y sonido sintetizado de confirmación.
   - 🔴 **Acceso Denegado**: Alerta visual y sonora con el motivo exacto (*Membresía vencida*, *Pago pendiente* o *Estado congelado*).
+- Las membresías permiten acceso desde su fecha de inicio hasta su fecha de vencimiento, ambas inclusive; fuera de ese rango el acceso se bloquea automáticamente.
 - Log de accesos en tiempo real con registro de fecha, hora y método.
 - Exportación del historial de asistencias a **formato CSV / Excel**.
 

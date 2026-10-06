@@ -769,6 +769,42 @@ class GymDatabase {
   }
 
   // --- Members ---
+  getTodayDate() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${now.getFullYear()}-${month}-${day}`;
+  }
+
+  getMembershipEndDate(startDate, durationDays) {
+    const days = Math.max(1, Math.floor(Number(durationDays) || 30));
+    const endDate = new Date(`${startDate}T12:00:00`);
+    endDate.setDate(endDate.getDate() + days - 1);
+    const month = String(endDate.getMonth() + 1).padStart(2, '0');
+    const day = String(endDate.getDate()).padStart(2, '0');
+    return `${endDate.getFullYear()}-${month}-${day}`;
+  }
+
+  getMemberStatus(member, today = this.getTodayDate()) {
+    if (member.status !== 'active') return member.status;
+
+    const isValidDate = value => {
+      if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      const [year, month, day] = value.split('-').map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      return date.getUTCFullYear() === year &&
+        date.getUTCMonth() === month - 1 &&
+        date.getUTCDate() === day;
+    };
+
+    if (!isValidDate(member.startDate) || !isValidDate(member.endDate) || member.startDate > member.endDate) {
+      return 'expired';
+    }
+    if (today < member.startDate) return 'pending';
+    if (today > member.endDate) return 'expired';
+    return 'active';
+  }
+
   getMembers() {
     return this.data.members || [];
   }
@@ -1048,7 +1084,8 @@ class GymDatabase {
   recordAttendance(member, method = "QR Escaneado") {
     const now = new Date();
     const timeStr = now.toTimeString().slice(0, 5);
-    const dateStr = now.toISOString().split('T')[0];
+    const dateStr = this.getTodayDate();
+    const memberStatus = this.getMemberStatus(member);
 
     const attendanceRecord = {
       id: `ATT-${Date.now().toString().slice(-5)}`,
@@ -1058,13 +1095,13 @@ class GymDatabase {
       timestamp: now.toISOString(),
       date: dateStr,
       time: timeStr,
-      status: member.status === 'active' ? 'granted' : 'denied',
+      status: memberStatus === 'active' ? 'granted' : 'denied',
       method: method
     };
 
     this.data.attendances.unshift(attendanceRecord);
 
-    if (member.status === 'active') {
+    if (memberStatus === 'active') {
       // update member stats
       member.totalVisits = (member.totalVisits || 0) + 1;
       member.lastVisit = `${dateStr} ${timeStr}`;
@@ -1079,7 +1116,7 @@ class GymDatabase {
   }
 
   getTodayAttendances() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.getTodayDate();
     return (this.data.attendances || []).filter(a => a.date === today);
   }
 

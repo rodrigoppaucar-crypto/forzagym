@@ -378,8 +378,8 @@ class GymApp {
   // --- Dashboard Rendering ---
   renderDashboard() {
     const members = window.GymDB.getMembers();
-    const activeCount = members.filter(m => m.status === 'active').length;
-    const expiredCount = members.filter(m => m.status === 'expired').length;
+    const activeCount = members.filter(m => window.GymDB.getMemberStatus(m) === 'active').length;
+    const expiredCount = members.filter(m => window.GymDB.getMemberStatus(m) === 'expired').length;
     const todayAtts = window.GymDB.getTodayAttendances().length;
     
     // Calculate Monthly Revenue
@@ -544,7 +544,7 @@ class GymApp {
     let list = window.GymDB.getMembers();
 
     if (filterStatus !== 'all') {
-      list = list.filter(m => m.status === filterStatus);
+      list = list.filter(m => window.GymDB.getMemberStatus(m) === filterStatus);
     }
 
     if (searchQuery) {
@@ -566,11 +566,12 @@ class GymApp {
     tableBody.innerHTML = list.map(m => {
       const plan = window.GymDB.getMembershipById(m.membershipId);
       const planName = plan ? plan.name : 'Sin Plan';
+      const status = window.GymDB.getMemberStatus(m);
 
       let statusBadge = '';
-      if (m.status === 'active') statusBadge = '<span class="status-badge active"><i class="fa-solid fa-circle-check"></i> Activo</span>';
-      else if (m.status === 'expired') statusBadge = '<span class="status-badge expired"><i class="fa-solid fa-circle-xmark"></i> Vencido</span>';
-      else if (m.status === 'frozen') statusBadge = '<span class="status-badge frozen"><i class="fa-solid fa-snowflake"></i> Congelado</span>';
+      if (status === 'active') statusBadge = '<span class="status-badge active"><i class="fa-solid fa-circle-check"></i> Activo</span>';
+      else if (status === 'expired') statusBadge = '<span class="status-badge expired"><i class="fa-solid fa-circle-xmark"></i> Vencido</span>';
+      else if (status === 'frozen') statusBadge = '<span class="status-badge frozen"><i class="fa-solid fa-snowflake"></i> Congelado</span>';
       else statusBadge = '<span class="status-badge pending">Pendiente</span>';
 
       return `
@@ -701,10 +702,8 @@ class GymApp {
       this.showToast('Los pases de visita se cobran en Punto de Venta y no se asignan a socios.', 'warning');
       return;
     }
-    const startDate = new Date().toISOString().split('T')[0];
-    const endDateObj = new Date();
-    endDateObj.setDate(endDateObj.getDate() + (plan ? plan.durationDays : 30));
-    const endDate = endDateObj.toISOString().split('T')[0];
+    const startDate = window.GymDB.getTodayDate();
+    const endDate = window.GymDB.getMembershipEndDate(startDate, plan ? plan.durationDays : 30);
 
     if (editId) {
       // Update
@@ -778,8 +777,9 @@ class GymApp {
 
     // Status Tag
     const statusEl = document.getElementById('details-status-badge');
-    statusEl.className = `status-badge ${member.status}`;
-    statusEl.textContent = member.status.toUpperCase();
+    const memberStatus = window.GymDB.getMemberStatus(member);
+    statusEl.className = `status-badge ${memberStatus}`;
+    statusEl.textContent = memberStatus.toUpperCase();
 
     // Render Digital Pass QR in modal
     GymQR.generate('details-qr-container', member.qrCode || member.id, { size: 220 });
@@ -816,13 +816,12 @@ class GymApp {
 
     const plan = window.GymDB.getMembershipById(member.membershipId);
     const days = plan ? plan.durationDays : 30;
-    const newEnd = new Date();
-    newEnd.setDate(newEnd.getDate() + days);
+    const startDate = window.GymDB.getTodayDate();
 
     window.GymDB.updateMember(member.id, {
       status: 'active',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: newEnd.toISOString().split('T')[0]
+      startDate,
+      endDate: window.GymDB.getMembershipEndDate(startDate, days)
     });
 
     if (plan) {
@@ -965,7 +964,8 @@ class GymApp {
     }
 
     const plan = window.GymDB.getMembershipById(member.membershipId);
-    const isGranted = member.status === 'active';
+    const memberStatus = window.GymDB.getMemberStatus(member);
+    const isGranted = memberStatus === 'active';
 
     // Record attendance in DB
     const att = window.GymDB.recordAttendance(member, "Torniquete Principal");
@@ -984,7 +984,7 @@ class GymApp {
       resultBox.innerHTML = `
         <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; margin-bottom: 0.4rem;"></i>
         <div style="font-size: 1.25rem; font-weight: 800;">ACCESO DENEGADO</div>
-        <div style="font-size: 0.88rem;">Membresía ${member.status === 'expired' ? 'VENCIDA' : member.status.toUpperCase()} • Acércate a recepción</div>
+        <div style="font-size: 0.88rem;">Membresía ${memberStatus === 'expired' ? 'VENCIDA' : memberStatus.toUpperCase()} • Acércate a recepción</div>
       `;
     }
 
@@ -2593,8 +2593,9 @@ class GymApp {
     document.getElementById('portal-visits').textContent = `${member.totalVisits || 0} visitas`;
 
     const statusBadge = document.getElementById('portal-status-badge');
-    statusBadge.className = `status-badge ${member.status}`;
-    statusBadge.textContent = member.status.toUpperCase();
+    const memberStatus = window.GymDB.getMemberStatus(member);
+    statusBadge.className = `status-badge ${memberStatus}`;
+    statusBadge.textContent = memberStatus.toUpperCase();
 
     // Render QR Pass
     GymQR.generate('portal-qr-card', member.qrCode || member.id, { size: 240 });
