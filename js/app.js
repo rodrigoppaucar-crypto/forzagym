@@ -168,7 +168,6 @@ class GymApp {
   hasPermission(module) {
     if (!this.currentUser) this.currentUser = window.GymDB.getCurrentUser();
     if (!this.currentUser) return false;
-    if (module === 'visit-pass') return this.currentUser.status === 'active';
     if (this.currentUser.role === 'admin') return true;
     if (!this.currentUser.permissions || !Array.isArray(this.currentUser.permissions)) return false;
     if (this.currentUser.permissions.includes('all')) return true;
@@ -1033,7 +1032,7 @@ class GymApp {
               </li>
             `).join('')}
           </ul>
-          ${p.visitPass ? `<div style="padding: 0.75rem; border-radius: var(--radius-sm); background: var(--bg-secondary); margin-bottom: 1rem; text-align: center;"><span style="display:block; font-size:0.75rem; color:var(--text-muted);">QR permanente · Para cualquier trabajador</span><div id="visit-pass-qr-${index}" style="display:flex; justify-content:center; margin:0.5rem auto;"></div><strong style="font-size:1.1rem; letter-spacing:0.08em;">${this.escapeFinanceHtml(p.code || '')}</strong></div>` : ''}
+          ${p.visitPass ? `<div style="padding: 0.75rem; border-radius: var(--radius-sm); background: var(--bg-secondary); margin-bottom: 1rem; text-align: center;"><span style="display:block; font-size:0.75rem; color:var(--text-muted);">QR permanente · Cobro según permisos del usuario</span><div id="visit-pass-qr-${index}" style="display:flex; justify-content:center; margin:0.5rem auto;"></div><strong style="font-size:1.1rem; letter-spacing:0.08em;">${this.escapeFinanceHtml(p.code || '')}</strong></div>` : ''}
         </div>
 
         ${p.visitPass
@@ -1172,7 +1171,7 @@ class GymApp {
     }
 
     const benefits = visitPass
-      ? ['Pase de visita sin fecha de caducidad', 'Código QR reutilizable para cobro por cualquier trabajador']
+      ? ['Pase de visita sin fecha de caducidad', 'Código QR reutilizable para cobro por usuarios autorizados']
       : (rawBenefits ? rawBenefits.split('\n').map(b => b.trim()).filter(b => b.length > 0) : ['Acceso general al gimnasio']);
     let code = '';
     if (visitPass) {
@@ -3052,7 +3051,7 @@ class GymApp {
     document.getElementById('u-email').value = user.email || "";
 
     // Set permission checkboxes
-    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'visit-pass', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
     const isAdmin = user.role === 'admin' || (user.permissions && user.permissions.includes('all'));
     
     allPerms.forEach(p => {
@@ -3067,7 +3066,7 @@ class GymApp {
 
   onRolePresetChanged(role) {
     const titleInput = document.getElementById('u-role-title');
-    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'visit-pass', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
 
     let defaultTitle = "";
     let activePerms = [];
@@ -3079,7 +3078,7 @@ class GymApp {
         break;
       case 'receptionist':
         defaultTitle = "Recepcionista / Front Desk";
-        activePerms = ['access', 'members', 'pos', 'classes', 'finances'];
+        activePerms = ['access', 'members', 'pos', 'visit-pass', 'classes', 'finances'];
         break;
       case 'trainer':
         defaultTitle = "Head Coach / Entrenador";
@@ -3087,7 +3086,7 @@ class GymApp {
         break;
       case 'cashier':
         defaultTitle = "Cajero & Ventas POS";
-        activePerms = ['pos', 'finances'];
+        activePerms = ['pos', 'visit-pass', 'finances'];
         break;
       case 'custom':
         defaultTitle = "Personalizado";
@@ -3107,7 +3106,7 @@ class GymApp {
 
   onPermissionCheckboxChanged() {
     const roleSelect = document.getElementById('u-role');
-    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'visit-pass', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
     const checkedCount = allPerms.filter(p => {
       const chk = document.getElementById(`perm-${p}`);
       return chk && chk.checked;
@@ -3121,7 +3120,7 @@ class GymApp {
   }
 
   toggleAllPermissions(enable) {
-    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'visit-pass', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
     allPerms.forEach(p => {
       const chk = document.getElementById(`perm-${p}`);
       if (chk) chk.checked = enable;
@@ -3156,7 +3155,7 @@ class GymApp {
     }
 
     // Gather checked permissions
-    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
+    const allPerms = ['dashboard', 'access', 'members', 'memberships', 'pos', 'visit-pass', 'classes', 'routines', 'finances', 'member-portal', 'settings', 'users'];
     const permissions = [];
     allPerms.forEach(p => {
       const chk = document.getElementById(`perm-${p}`);

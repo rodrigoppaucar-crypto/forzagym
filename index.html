@@ -1862,7 +1862,7 @@
         <div class="form-group">
           <label style="display: flex; align-items: flex-start; gap: 9px; cursor: pointer; color: var(--text-main);">
             <input type="checkbox" id="plan-visit-pass" onchange="GymAppInstance.toggleVisitPassPlan(this.checked)" style="margin-top: 3px; accent-color: var(--primary);" />
-            <span><strong>Pase de visita con QR</strong><small style="display: block; color: var(--text-muted); margin-top: 3px;">Genera un código único reutilizable y sin fecha de caducidad. Cualquier trabajador autenticado puede cobrarlo.</small></span>
+            <span><strong>Pase de visita con QR</strong><small style="display: block; color: var(--text-muted); margin-top: 3px;">Genera un código único reutilizable y sin fecha de caducidad. El cobro requiere el permiso Cobrar Pase QR.</small></span>
           </label>
         </div>
         <div id="plan-visit-pass-code-wrap" class="form-group" hidden>
@@ -1872,7 +1872,7 @@
           <button type="button" id="plan-visit-pass-print" class="btn btn-outline" onclick="GymAppInstance.printVisitPassCard()" style="width: 100%; margin-top: 0.65rem;">
             <i class="fa-solid fa-print"></i> Imprimir tarjeta QR
           </button>
-          <small style="display: block; color: var(--text-muted); margin-top: 4px;">Este QR queda guardado con el plan y puede usarlo cualquier trabajador autenticado desde “Cobrar Pase QR”.</small>
+          <small style="display: block; color: var(--text-muted); margin-top: 4px;">Este QR queda guardado con el plan y puede cobrarse desde “Cobrar Pase QR” por usuarios autorizados.</small>
         </div>
 
         <div class="form-row">
@@ -2043,6 +2043,17 @@
                 <div>
                   <strong>Tienda POS & Stock</strong>
                   <span>Cobros de suplementos y tickets térmicos</span>
+                </div>
+              </div>
+            </label>
+
+            <label class="permission-item">
+              <input type="checkbox" id="perm-visit-pass" value="visit-pass" onchange="GymAppInstance.onPermissionCheckboxChanged()" />
+              <div class="perm-info">
+                <i class="fa-solid fa-ticket"></i>
+                <div>
+                  <strong>Cobrar Pase QR</strong>
+                  <span>Cobrar pases de visita sin habilitar la tienda POS</span>
                 </div>
               </div>
             </label>
